@@ -11,7 +11,6 @@ DeepLang es un lenguaje de programación de dominio específico (DSL) diseñado 
 | `parser.py` | Toma los tokens y construye el árbol de sintaxis |
 | `EvalVisitor.py` | Recorre el árbol y ejecuta las operaciones |
 | `DeepLang.py` | Punto de entrada — conecta todos los componentes |
-| `t.dl` | Archivo de prueba con ejemplos |
 
 ## Cómo ejecutar
 
