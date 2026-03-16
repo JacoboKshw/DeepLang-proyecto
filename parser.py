@@ -20,21 +20,21 @@ class ProgContext:
 class AssignContext:
     """ # assign"""
     def __init__(self, name, expr):
-        self.name = name    # equivalente a ctx.ID().getText()
-        self.expr = expr    # equivalente a ctx.expr()
+        self.name = name   
+        self.expr = expr    
 
 
 class PrintExprContext:
     """ # printExpr"""
     def __init__(self, expr):
-        self.expr = expr    # equivalente a ctx.expr()
+        self.expr = expr   
 
 
 class MulDivContext:
     """# MulDiv"""
     def __init__(self, left, op, right):
         self.left  = left
-        self.op    = op     # equivalente a ctx.op.getType()
+        self.op    = op    
         self.right = right
 
 
@@ -42,26 +42,26 @@ class AddSubContext:
     """# AddSub"""
     def __init__(self, left, op, right):
         self.left  = left
-        self.op    = op     # equivalente a ctx.op.getType()
+        self.op    = op    
         self.right = right
 
 
 class IntContext:
     """# int"""
     def __init__(self, value):
-        self.value = value  # equivalente a ctx.INT().getText()
+        self.value = value  #
 
 
 class IdContext:
     """# id"""
     def __init__(self, name):
-        self.name = name    # equivalente a ctx.ID().getText()
+        self.name = name    
 
 
 class ParensContext:
     """# parens"""
     def __init__(self, expr):
-        self.expr = expr    # equivalente a ctx.expr()
+        self.expr = expr    
 
 
 # ── Parser ─────────────────────────────────────────────────
@@ -94,7 +94,6 @@ class DeepLangParser:
 
     # ── prog: stat+ ────────────────────────────────────────
     def prog(self):
-        """Equivalente a parser.prog() en Calc.java"""
         self.skip_nl()
         stats = []
         while not self.match(EOF):
