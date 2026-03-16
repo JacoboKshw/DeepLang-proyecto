@@ -65,7 +65,7 @@ class EvalVisitor:
         # int right
         right = self.visit(ctx.right)
 
-        # if (ctx.op.getType() == LabeledExprParser.MUL) return left * right;
+    
         if ctx.op.type == MUL:
             return left * right
 
