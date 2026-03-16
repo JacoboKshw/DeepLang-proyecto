@@ -54,7 +54,7 @@ class EvalVisitor:
         # System.out.println(value);
         print(value)
 
-        return 0    # return dummy value
+        return 0   
 
     # ── expr op=('*'|'/') expr ────────────────────────────
 
