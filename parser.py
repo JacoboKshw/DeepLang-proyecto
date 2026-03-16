@@ -20,21 +20,21 @@ class ProgContext:
 class AssignContext:
     """ID '=' expr NEWLINE   →  # assign"""
     def __init__(self, name, expr):
-        self.name = name    # equivalente a ctx.ID().getText()
-        self.expr = expr    # equivalente a ctx.expr()
+        self.name = name   
+        self.expr = expr    
 
 
 class PrintExprContext:
     """expr NEWLINE   →  # printExpr"""
     def __init__(self, expr):
-        self.expr = expr    # equivalente a ctx.expr()
+        self.expr = expr    )
 
 
 class MulDivContext:
     """expr op=('*'|'/') expr   →  # MulDiv"""
     def __init__(self, left, op, right):
         self.left  = left
-        self.op    = op     # equivalente a ctx.op.getType()
+        self.op    = op    
         self.right = right
 
 
@@ -42,35 +42,31 @@ class AddSubContext:
     """expr op=('+'|'-') expr   →  # AddSub"""
     def __init__(self, left, op, right):
         self.left  = left
-        self.op    = op     # equivalente a ctx.op.getType()
+        self.op    = op     
         self.right = right
 
 
 class IntContext:
     """INT   →  # int"""
     def __init__(self, value):
-        self.value = value  # equivalente a ctx.INT().getText()
+        self.value = value  
 
 
 class IdContext:
     """ID   →  # id"""
     def __init__(self, name):
-        self.name = name    # equivalente a ctx.ID().getText()
+        self.name = name    
 
 
 class ParensContext:
     """'(' expr ')'   →  # parens"""
     def __init__(self, expr):
-        self.expr = expr    # equivalente a ctx.expr()
+        self.expr = expr    #
 
 
 # ── Parser ─────────────────────────────────────────────────
 
 class DeepLangParser:
-    """
-    Equivalente al DeepLangParser.java que ANTLR generaría.
-    Toma el stream de tokens y construye el árbol.
-    """
 
     def __init__(self, tokens):
         self.tokens = tokens
@@ -98,7 +94,6 @@ class DeepLangParser:
 
     # ── prog: stat+ ────────────────────────────────────────
     def prog(self):
-        """Equivalente a parser.prog() en Calc.java"""
         self.skip_nl()
         stats = []
         while not self.match(EOF):
@@ -140,7 +135,7 @@ class DeepLangParser:
     def _add(self):
         left = self._mul()
         while self.match(ADD, SUB):
-            op    = self.consume()      # guarda el token operador
+            op    = self.consume()      
             right = self._mul()
             left  = AddSubContext(left, op, right)
         return left
@@ -148,7 +143,7 @@ class DeepLangParser:
     def _mul(self):
         left = self._primary()
         while self.match(MUL, DIV):
-            op    = self.consume()      # guarda el token operador
+            op    = self.consume()      
             right = self._primary()
             left  = MulDivContext(left, op, right)
         return left
