@@ -28,10 +28,6 @@ class LexerError(Exception):
 
 
 class DeepLangLexer:
-    """
-    Equivalente al DeepLangLexer.java que ANTLR generaría.
-    Lee el input y produce un stream de tokens.
-    """
 
     def __init__(self, input_stream):
         self.src  = input_stream
@@ -49,7 +45,6 @@ class DeepLangLexer:
         return ch
 
     def nextToken(self):
-        """Equivalente al nextToken() de ANTLR."""
         tokens = []
 
         while self.pos < len(self.src):
@@ -85,7 +80,6 @@ class DeepLangLexer:
                 tokens.append(Token(ID, self.src[start:self.pos], line))
                 continue
 
-            # Operadores y paréntesis
             simple = {
                 '*': MUL,
                 '/': DIV,
