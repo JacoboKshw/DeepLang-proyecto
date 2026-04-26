@@ -30,6 +30,13 @@ class EvalVisitor:
             'sin': self._sin,
             'cos': self._cos,
             'tan': self._tan,
+            'cosecante': self._csc,
+            'csc': self._csc,
+            'secante': self._sec,
+            'sec': self._sec,
+            'cotangente': self._cot,
+            'cot': self._cot,
+            'ctg': self._cot,
         }
 
     def _normalize_angle(self, x):
@@ -64,6 +71,24 @@ class EvalVisitor:
         if -1e-12 < c < 1e-12:
             raise ZeroDivisionError("tan(x) indefinida cuando cos(x) = 0")
         return self._sin(x) / c
+
+    def _sec(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("sec(x) indefinida cuando cos(x) = 0")
+        return 1.0 / c
+
+    def _csc(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cosecante(x) indefinida cuando sen(x) = 0")
+        return 1.0 / s
+
+    def _cot(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cotangente(x) indefinida cuando sen(x) = 0")
+        return self._cos(x) / s
 
     def visit(self, ctx):
         if isinstance(ctx, ProgContext):       return self.visitProg(ctx)

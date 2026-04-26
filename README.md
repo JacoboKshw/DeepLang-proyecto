@@ -148,10 +148,14 @@ x = 0
 print(sen(x))
 print(cos(x))
 print(tan(x))
+print(cosecante(x))
+print(secante(x))
+print(cotangente(x))
 ```
 
-- `sen`, `cos` y `tan` reciben **1 argumento**.
+- `sen`, `cos`, `tan`, `cosecante`, `secante` y `cotangente` reciben **1 argumento**.
 - `sin` también está disponible como alias de `sen`.
+- También hay alias cortos: `csc`, `sec`, `cot` y `ctg`.
 - El argumento está en **radianes**.
 - Están implementadas desde cero en el intérprete (series de Taylor).
 
