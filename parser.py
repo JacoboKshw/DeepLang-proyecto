@@ -1,7 +1,7 @@
 # parser.py
 
 from lexer import (
-    MUL, DIV, ADD, SUB, ID, INT, NEWLINE, LPAREN, RPAREN, EOF,
+    MUL, DIV, ADD, SUB, POW, ID, INT, NEWLINE, LPAREN, RPAREN, EOF,
     IF, ELSE, END, WHILE,
     EQ, NEQ, LT, GT, LTE, GTE,
     LBRACKET, RBRACKET, COMMA,
@@ -45,6 +45,14 @@ class MulDivContext:
     def __init__(self, left, op, right):
         self.left  = left
         self.op    = op    
+        self.right = right
+
+
+class PowContext:
+    """# Pow"""
+    def __init__(self, left, op, right):
+        self.left  = left
+        self.op    = op
         self.right = right
 
 
@@ -400,11 +408,20 @@ class DeepLangParser:
         return left
 
     def _mul(self):
-        left = self._primary()
+        left = self._pow()
         while self.match(MUL, DIV):
             op    = self.consume()      
-            right = self._primary()
+            right = self._pow()
             left  = MulDivContext(left, op, right)
+        return left
+
+    # potencia: asociatividad a la derecha (a ^ b ^ c = a ^ (b ^ c))
+    def _pow(self):
+        left = self._primary()
+        if self.match(POW):
+            op = self.consume()
+            right = self._pow()
+            return PowContext(left, op, right)
         return left
 
     def _primary(self):

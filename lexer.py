@@ -28,6 +28,7 @@ GTE      = 'GTE'      # >=
 LBRACKET = 'LBRACKET'  # [
 RBRACKET = 'RBRACKET'  # ]
 COMMA    = 'COMMA'     # ,
+POW      = 'POW'       # ^
 
 # ── Tokens para I/O ───────────────────────────────────────
 PRINT    = 'PRINT'
@@ -135,6 +136,7 @@ class DeepLangLexer:
                 '/': DIV,
                 '+': ADD,
                 '-': SUB,
+                '^': POW,
                 '(': LPAREN,
                 ')': RPAREN,
                 '=': 'ASSIGN',
