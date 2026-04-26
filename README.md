@@ -31,10 +31,11 @@ El REPL muestra `dl>` cuando espera una instrucción nueva y `...` cuando está 
 10 - 4
 6 * 7
 20 / 4
+(2 ^ 3)
 (1 + 2) * 3
 ```
 
-La división es entera. Los paréntesis cambian la precedencia normal (`*` y `/` antes que `+` y `-`).
+La división es entera. La potencia se escribe con `^`. Los paréntesis cambian la precedencia normal (`^` antes que `*` y `/`, y luego `+` y `-`).
 
 ---
 
@@ -136,6 +137,43 @@ print(factorial(5))
 - Se retorna un valor con `return`.
 - Soportan recursividad.
 - Cada llamada tiene su propio ámbito de variables — los parámetros no pisan las variables externas.
+
+---
+
+### Funciones trigonométricas integradas
+
+También puedes usar funciones trigonométricas sin definirlas:
+
+```
+x = 0
+print(sen(x))
+print(cos(x))
+print(tan(x))
+print(cosecante(x))
+print(secante(x))
+print(cotangente(x))
+print(modulo(10, 3))
+```
+
+- `sen`, `cos`, `tan`, `cosecante`, `secante` y `cotangente` reciben **1 argumento**.
+- `sin` también está disponible como alias de `sen`.
+- También hay alias cortos: `csc`, `sec`, `cot` y `ctg`.
+- `modulo(a, b)` (alias `mod(a, b)`) calcula el residuo de `a % b`.
+- El argumento está en **radianes**.
+- Están implementadas desde cero en el intérprete (series de Taylor).
+
+---
+
+### Potencias
+
+Puedes elevar usando `^`:
+
+```
+print(2 ^ 8)
+print(9 ^ 2)
+```
+
+- `x ^ y` requiere que `y` sea entero.
 
 ---
 

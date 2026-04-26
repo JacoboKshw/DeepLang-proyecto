@@ -1,9 +1,9 @@
 # EvalVisitor.py
 
-from lexer  import MUL, DIV, ADD, SUB, EQ, NEQ, LT, GT, LTE, GTE
+from lexer  import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
-    MulDivContext, AddSubContext,
+    MulDivContext, AddSubContext, PowContext,
     IntContext, IdContext, ParensContext,
     IfContext, ConditionContext, WhileContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
@@ -19,9 +19,83 @@ class ReturnSignal(Exception):
 
 class EvalVisitor:
 
+    PI = 3.141592653589793
+    TWO_PI = 2 * PI
+
     def __init__(self):
         self.memory    = {}   # variables globales
         self.functions = {}   # nombre → FuncDefContext
+        self.builtins  = {
+            'sen': (self._sin, 1),
+            'sin': (self._sin, 1),
+            'cos': (self._cos, 1),
+            'tan': (self._tan, 1),
+            'cosecante': (self._csc, 1),
+            'csc': (self._csc, 1),
+            'secante': (self._sec, 1),
+            'sec': (self._sec, 1),
+            'cotangente': (self._cot, 1),
+            'cot': (self._cot, 1),
+            'ctg': (self._cot, 1),
+            'modulo': (self._mod, 2),
+            'mod': (self._mod, 2),
+        }
+
+    def _normalize_angle(self, x):
+        """Reduce x al rango [-pi, pi] para mejorar convergencia."""
+        x = x % self.TWO_PI
+        if x > self.PI:
+            x -= self.TWO_PI
+        return x
+
+    def _sin(self, x):
+        x = self._normalize_angle(x)
+        term = x
+        result = x
+        # Serie de Taylor de sin(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n) * (2 * n + 1))
+            result += term
+        return result
+
+    def _cos(self, x):
+        x = self._normalize_angle(x)
+        term = 1.0
+        result = 1.0
+        # Serie de Taylor de cos(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n - 1) * (2 * n))
+            result += term
+        return result
+
+    def _tan(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("tan(x) indefinida cuando cos(x) = 0")
+        return self._sin(x) / c
+
+    def _sec(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("sec(x) indefinida cuando cos(x) = 0")
+        return 1.0 / c
+
+    def _csc(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cosecante(x) indefinida cuando sen(x) = 0")
+        return 1.0 / s
+
+    def _cot(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cotangente(x) indefinida cuando sen(x) = 0")
+        return self._cos(x) / s
+
+    def _mod(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("modulo(a, b) indefinida cuando b = 0")
+        return a % b
 
     def visit(self, ctx):
         if isinstance(ctx, ProgContext):       return self.visitProg(ctx)
@@ -29,6 +103,7 @@ class EvalVisitor:
         if isinstance(ctx, PrintExprContext):  return self.visitPrintExpr(ctx)
         if isinstance(ctx, PrintContext):      return self.visitPrint(ctx)
         if isinstance(ctx, MulDivContext):     return self.visitMulDiv(ctx)
+        if isinstance(ctx, PowContext):        return self.visitPow(ctx)
         if isinstance(ctx, AddSubContext):     return self.visitAddSub(ctx)
         if isinstance(ctx, IntContext):        return self.visitInt(ctx)
         if isinstance(ctx, IdContext):         return self.visitId(ctx)
@@ -80,6 +155,15 @@ class EvalVisitor:
         if right == 0:
             raise ZeroDivisionError("No se puede dividir entre cero")
         return left // right
+
+    # ── expr '^' expr ──────────────────────────────────────
+
+    def visitPow(self, ctx):
+        left  = self.visit(ctx.left)
+        right = self.visit(ctx.right)
+        if isinstance(right, float) and not right.is_integer():
+            raise RuntimeError("El exponente en x^y debe ser entero")
+        return left ** int(right)
 
     # ── expr op=('+'|'-') expr ────────────────────────────
 
@@ -170,6 +254,15 @@ class EvalVisitor:
     # ── nombre(args) ───────────────────────────────────────
 
     def visitFuncCall(self, ctx):
+        if ctx.name in self.builtins:
+            builtin_fn, arity = self.builtins[ctx.name]
+            if len(ctx.args) != arity:
+                raise RuntimeError(
+                    f"'{ctx.name}' espera {arity} argumento(s), recibió {len(ctx.args)}"
+                )
+            values = [self.visit(arg) for arg in ctx.args]
+            return builtin_fn(*values)
+
         if ctx.name not in self.functions:
             raise RuntimeError(f"Función '{ctx.name}' no definida")
 

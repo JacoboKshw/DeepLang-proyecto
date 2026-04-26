@@ -20,6 +20,7 @@ condition: expr compOp expr ;
 compOp: '==' | '!=' | '<' | '>' | '<=' | '>=' ;
 
 expr:   expr op=('*'|'/') expr      # MulDiv
+    |   expr op='^' expr            # Pow
     |   expr op=('+'|'-') expr      # AddSub
     |   ID '(' args? ')'            # funcCall
     |   ID '[' expr ']'             # arrayAccess
@@ -45,6 +46,7 @@ GTE     : '>=' ;
 LBRACK  : '[' ;
 RBRACK  : ']' ;
 COMMA   : ',' ;
+POW     : '^' ;
 ID      : [a-zA-Z]+ ;
 INT     : [0-9]+ ;
 NEWLINE : '\r'? '\n' ;
