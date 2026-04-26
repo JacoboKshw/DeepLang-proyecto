@@ -19,9 +19,76 @@ class ReturnSignal(Exception):
 
 class EvalVisitor:
 
+    PI = 3.141592653589793
+    TWO_PI = 2 * PI
+
     def __init__(self):
         self.memory    = {}   # variables globales
         self.functions = {}   # nombre → FuncDefContext
+        self.builtins  = {
+            'sen': self._sin,
+            'sin': self._sin,
+            'cos': self._cos,
+            'tan': self._tan,
+            'cosecante': self._csc,
+            'csc': self._csc,
+            'secante': self._sec,
+            'sec': self._sec,
+            'cotangente': self._cot,
+            'cot': self._cot,
+            'ctg': self._cot,
+        }
+
+    def _normalize_angle(self, x):
+        """Reduce x al rango [-pi, pi] para mejorar convergencia."""
+        x = x % self.TWO_PI
+        if x > self.PI:
+            x -= self.TWO_PI
+        return x
+
+    def _sin(self, x):
+        x = self._normalize_angle(x)
+        term = x
+        result = x
+        # Serie de Taylor de sin(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n) * (2 * n + 1))
+            result += term
+        return result
+
+    def _cos(self, x):
+        x = self._normalize_angle(x)
+        term = 1.0
+        result = 1.0
+        # Serie de Taylor de cos(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n - 1) * (2 * n))
+            result += term
+        return result
+
+    def _tan(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("tan(x) indefinida cuando cos(x) = 0")
+        return self._sin(x) / c
+
+    def _sec(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("sec(x) indefinida cuando cos(x) = 0")
+        return 1.0 / c
+
+    def _csc(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cosecante(x) indefinida cuando sen(x) = 0")
+        return 1.0 / s
+
+    def _cot(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cotangente(x) indefinida cuando sen(x) = 0")
+        return self._cos(x) / s
 
     def visit(self, ctx):
         if isinstance(ctx, ProgContext):       return self.visitProg(ctx)
@@ -170,6 +237,14 @@ class EvalVisitor:
     # ── nombre(args) ───────────────────────────────────────
 
     def visitFuncCall(self, ctx):
+        if ctx.name in self.builtins:
+            if len(ctx.args) != 1:
+                raise RuntimeError(
+                    f"'{ctx.name}' espera 1 argumento, recibió {len(ctx.args)}"
+                )
+            value = self.visit(ctx.args[0])
+            return self.builtins[ctx.name](value)
+
         if ctx.name not in self.functions:
             raise RuntimeError(f"Función '{ctx.name}' no definida")
 
