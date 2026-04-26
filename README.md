@@ -139,6 +139,24 @@ print(factorial(5))
 
 ---
 
+### Funciones trigonométricas integradas
+
+También puedes usar funciones trigonométricas sin definirlas:
+
+```
+x = 0
+print(sen(x))
+print(cos(x))
+print(tan(x))
+```
+
+- `sen`, `cos` y `tan` reciben **1 argumento**.
+- `sin` también está disponible como alias de `sen`.
+- El argumento está en **radianes**.
+- Están implementadas desde cero en el intérprete (series de Taylor).
+
+---
+
 ## Ejemplo completo
 
 ```
