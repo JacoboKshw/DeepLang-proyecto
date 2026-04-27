@@ -140,7 +140,7 @@ print(factorial(5))
 
 ---
 
-### Funciones trigonométricas integradas
+### Funciones integradas
 
 También puedes usar funciones trigonométricas sin definirlas:
 
