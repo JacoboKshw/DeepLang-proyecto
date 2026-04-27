@@ -9,6 +9,7 @@ from parser import (
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
     FuncDefContext, FuncCallContext, ReturnContext,
 )
+from deeplang_filelib import DeepLangFileLib
 
 
 class ReturnSignal(Exception):
@@ -25,6 +26,7 @@ class EvalVisitor:
     def __init__(self):
         self.memory    = {}   # Aquí viven las variables del programa.
         self.functions = {}   # Guardamos funciones definidas por el usuario.
+        filelib = DeepLangFileLib()
         self.builtins  = {
             'sen': (self._sin, 1),
             'sin': (self._sin, 1),
@@ -40,6 +42,8 @@ class EvalVisitor:
             'modulo': (self._mod, 2),
             'mod': (self._mod, 2),
             'raiz': (self._sqrt, 1),
+            'leerarchivo': (filelib.leerarchivo, 1),
+            'leerlineas': (filelib.leerlineas, 1),
         }
 
     def _normalize_angle(self, x):
