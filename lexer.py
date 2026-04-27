@@ -12,7 +12,7 @@ LPAREN  = 'LPAREN'
 RPAREN  = 'RPAREN'
 EOF     = 'EOF'
 
-# Tokens para estructuras de control.
+# Tokens para estructuras de control
 IF       = 'IF'
 ELSE     = 'ELSE'
 END      = 'END'
