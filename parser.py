@@ -164,7 +164,7 @@ class ReturnContext:
         self.expr = expr
 
 
-# Parser principal de DeepLang
+# Parser principal
 
 class DeepLangParser:
 
