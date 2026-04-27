@@ -1,7 +1,7 @@
 # parser.py
 
 from lexer import (
-    MUL, DIV, ADD, SUB, ID, INT, NEWLINE, LPAREN, RPAREN, EOF,
+    MUL, DIV, ADD, SUB, POW, ID, INT, STRING, NEWLINE, LPAREN, RPAREN, EOF,
     IF, ELSE, END, WHILE,
     EQ, NEQ, LT, GT, LTE, GTE,
     LBRACKET, RBRACKET, COMMA,
@@ -13,7 +13,7 @@ class ParseError(Exception):
     pass
 
 
-# ── Nodos del árbol ────────────────────────────────────────
+# Nodos del árbol sintáctico
 
 class ProgContext:
     """prog: stat+"""
@@ -22,7 +22,7 @@ class ProgContext:
 
 
 class AssignContext:
-    """ # assign"""
+    """Asignación simple."""
     def __init__(self, name, expr):
         self.name = name   
         self.expr = expr    
@@ -41,15 +41,23 @@ class PrintContext:
 
 
 class MulDivContext:
-    """# MulDiv"""
+    """Multiplicación o división."""
     def __init__(self, left, op, right):
         self.left  = left
         self.op    = op    
         self.right = right
 
 
+class PowContext:
+    """Potencia."""
+    def __init__(self, left, op, right):
+        self.left  = left
+        self.op    = op
+        self.right = right
+
+
 class AddSubContext:
-    """# AddSub"""
+    """Suma o resta."""
     def __init__(self, left, op, right):
         self.left  = left
         self.op    = op    
@@ -57,19 +65,25 @@ class AddSubContext:
 
 
 class IntContext:
-    """# int"""
+    """Literal entero."""
+    def __init__(self, value):
+        self.value = value
+
+
+class StringContext:
+    """Literal de texto."""
     def __init__(self, value):
         self.value = value
 
 
 class IdContext:
-    """# id"""
+    """Uso de variable."""
     def __init__(self, name):
         self.name = name    
 
 
 class ParensContext:
-    """# parens"""
+    """Expresión entre paréntesis."""
     def __init__(self, expr):
         self.expr = expr    
 
@@ -156,7 +170,7 @@ class ReturnContext:
         self.expr = expr
 
 
-# ── Parser ─────────────────────────────────────────────────
+# Parser principal de DeepLang
 
 class DeepLangParser:
 
@@ -184,7 +198,7 @@ class DeepLangParser:
         while self.match(NEWLINE):
             self.consume()
 
-    # ── prog: stat+ ────────────────────────────────────────
+    # Parsea el programa completo: una o más sentencias.
     def prog(self):
         self.skip_nl()
         stats = []
@@ -195,41 +209,40 @@ class DeepLangParser:
             self.skip_nl()
         return ProgContext(stats)
 
-    # ── stat ───────────────────────────────────────────────
+    # Parsea una sentencia.
     def stat(self):
-        # blank
+        # Línea en blanco.
         if self.match(NEWLINE):
             self.consume()
             return None
 
-        # if cond ... [else ...] end
+        # Bloque if.
         if self.match(IF):
             return self.if_stat()
 
-        # while cond ... end
+        # Bloque while.
         if self.match(WHILE):
             return self.while_stat()
 
-        # print(expr)
+        # Llamada a print.
         if self.match(PRINT):
             return self.print_stat()
 
-        # fun nombre(params) ... end
+        # Definición de función.
         if self.match(FUN):
             return self.fun_def()
 
-        # return expr
+        # Return dentro de función.
         if self.match(RETURN):
             return self.return_stat()
 
-        # assign:  ID '=' expr NEWLINE
-        #          ID '[' expr ']' '=' expr NEWLINE
+        # Asignaciones simples y de arreglo.
         if self.match(ID) and self.pos + 1 < len(self.tokens):
             next_tok = self.tokens[self.pos + 1]
 
-            # lista[i] = expr  — busca hacia adelante el ']' y verifica que sigue '='
+            # Si es arreglo, buscamos el cierre ']' y validamos que siga '='.
             if next_tok.type == LBRACKET:
-                # buscar el ] correspondiente para ver si sigue =
+                # Buscamos el ']' correspondiente.
                 depth = 1
                 look  = self.pos + 2
                 while look < len(self.tokens) and depth > 0:
@@ -237,7 +250,7 @@ class DeepLangParser:
                     if t.type == LBRACKET: depth += 1
                     if t.type == RBRACKET: depth -= 1
                     look += 1
-                # tokens[look-1] es el ']'; tokens[look] debe ser '='
+                # Si tras ']' viene '=', es asignación a arreglo.
                 is_assign = (look < len(self.tokens) and
                              self.tokens[look].text == '=')
                 if is_assign:
@@ -245,29 +258,29 @@ class DeepLangParser:
                     self.consume(LBRACKET)
                     index = self.expr()
                     self.consume(RBRACKET)
-                    self.consume()           # consume '='
+                    self.consume()           # Consumimos el '=' de la asignación.
                     expr = self.expr()
                     if self.match(NEWLINE):
                         self.consume()
                     return ArrayAssignContext(name, index, expr)
-                # si no hay '=', cae al caso expr NEWLINE de abajo
+                # Si no hay '=', se interpreta como expresión normal.
 
-            # var = expr
+        # Asignación normal: variable = expresión.
             if next_tok.text == '=':
                 name = self.consume(ID).text
-                self.consume()          # consume '='
+                self.consume()          # Consumimos el '=' de la asignación.
                 expr = self.expr()
                 if self.match(NEWLINE):
                     self.consume()
                 return AssignContext(name, expr)
 
-        # expr NEWLINE
+        # Si no coincide nada anterior, se trata como expresión.
         e = self.expr()
         if self.match(NEWLINE):
             self.consume()
         return PrintExprContext(e)
 
-    # ── print(expr) ────────────────────────────────────────
+    # Parsea una sentencia print(expr).
     def print_stat(self):
         self.consume(PRINT)
         self.consume(LPAREN)
@@ -277,13 +290,13 @@ class DeepLangParser:
             self.consume()
         return PrintContext(e)
 
-    # ── fun nombre(a, b) body end ──────────────────────────
+    # Parsea definición de función: fun nombre(...) ... end.
     def fun_def(self):
         self.consume(FUN)
         name = self.consume(ID).text
         self.consume(LPAREN)
 
-        # parámetros
+        # Leemos parámetros, si existen.
         params = []
         if not self.match(RPAREN):
             params.append(self.consume(ID).text)
@@ -294,7 +307,7 @@ class DeepLangParser:
         if self.match(NEWLINE):
             self.consume()
 
-        # cuerpo
+        # Leemos sentencias del cuerpo.
         body = []
         self.skip_nl()
         while not self.match(END) and not self.match(EOF):
@@ -309,7 +322,7 @@ class DeepLangParser:
 
         return FuncDefContext(name, params, body)
 
-    # ── return expr ────────────────────────────────────────
+    # Parsea return expr.
     def return_stat(self):
         self.consume(RETURN)
         e = self.expr()
@@ -317,14 +330,14 @@ class DeepLangParser:
             self.consume()
         return ReturnContext(e)
 
-    # ── if cond body [else body] end ──────────────────────
+    # Parsea if con bloque else opcional.
     def if_stat(self):
         self.consume(IF)
         cond = self.condition()
         if self.match(NEWLINE):
             self.consume()
 
-        # bloque then
+        # Sentencias del bloque then.
         then_stats = []
         self.skip_nl()
         while not self.match(ELSE) and not self.match(END) and not self.match(EOF):
@@ -333,7 +346,7 @@ class DeepLangParser:
                 then_stats.append(s)
             self.skip_nl()
 
-        # bloque else (opcional)
+        # Sentencias del bloque else (si aparece).
         else_stats = []
         if self.match(ELSE):
             self.consume(ELSE)
@@ -352,7 +365,7 @@ class DeepLangParser:
 
         return IfContext(cond, then_stats, else_stats)
 
-    # ── while cond body end ────────────────────────────────
+    # Parsea while ... end.
     def while_stat(self):
         self.consume(WHILE)
         cond = self.condition()
@@ -373,7 +386,7 @@ class DeepLangParser:
 
         return WhileContext(cond, body)
 
-    # ── condition: expr compOp expr ────────────────────────
+    # Parsea una condición con operador relacional.
     def condition(self):
         left = self.expr()
         if not self.match(EQ, NEQ, LT, GT, LTE, GTE):
@@ -386,11 +399,11 @@ class DeepLangParser:
         right = self.expr()
         return ConditionContext(left, op, right)
 
-    # ── expr ───────────────────────────────────────────────
+    # Punto de entrada para parsear expresiones.
     def expr(self):
         return self._add()
 
-    # MulDiv tiene mayor precedencia que AddSub
+    # + y - tienen menor precedencia que * y /.
     def _add(self):
         left = self._mul()
         while self.match(ADD, SUB):
@@ -400,17 +413,26 @@ class DeepLangParser:
         return left
 
     def _mul(self):
-        left = self._primary()
+        left = self._pow()
         while self.match(MUL, DIV):
             op    = self.consume()      
-            right = self._primary()
+            right = self._pow()
             left  = MulDivContext(left, op, right)
+        return left
+
+    # Potencia asociativa a la derecha: a ^ b ^ c = a ^ (b ^ c).
+    def _pow(self):
+        left = self._primary()
+        if self.match(POW):
+            op = self.consume()
+            right = self._pow()
+            return PowContext(left, op, right)
         return left
 
     def _primary(self):
         tok = self.current()
 
-        # '[' expr (',' expr)* ']'   →  literal de arreglo
+        # Literal de arreglo: [expr, expr, ...]
         if tok.type == LBRACKET:
             self.consume()
             elements = []
@@ -422,22 +444,27 @@ class DeepLangParser:
             self.consume(RBRACKET)
             return ArrayLiteralContext(elements)
 
-        # INT
+        # Entero.
         if tok.type == INT:
             self.consume()
             return IntContext(int(tok.text))
 
-        # '(' expr ')'
+        # Texto entre comillas.
+        if tok.type == STRING:
+            self.consume()
+            return StringContext(tok.text)
+
+        # Paréntesis.
         if tok.type == LPAREN:
             self.consume()
             e = self.expr()
             self.consume(RPAREN)
             return ParensContext(e)
 
-        # ID  o  ID '[' expr ']'  o  ID '(' args ')'
+        # Puede ser variable, acceso a arreglo o llamada a función.
         if tok.type == ID:
             name = self.consume().text
-            # llamada a función: nombre(args)
+            # Llamada a función.
             if self.match(LPAREN):
                 self.consume()
                 args = []
@@ -448,7 +475,7 @@ class DeepLangParser:
                         args.append(self.expr())
                 self.consume(RPAREN)
                 return FuncCallContext(name, args)
-            # acceso a arreglo: nombre[index]
+            # Acceso a arreglo.
             if self.match(LBRACKET):
                 self.consume()
                 index = self.expr()

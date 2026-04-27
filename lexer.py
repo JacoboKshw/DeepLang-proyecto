@@ -1,5 +1,5 @@
 # lexer.py
-# Tokens 
+# Tokens básicos del lenguaje.
 
 MUL     = 'MUL'
 DIV     = 'DIV'
@@ -7,12 +7,13 @@ ADD     = 'ADD'
 SUB     = 'SUB'
 ID      = 'ID'
 INT     = 'INT'
+STRING  = 'STRING'
 NEWLINE = 'NEWLINE'
 LPAREN  = 'LPAREN'
 RPAREN  = 'RPAREN'
 EOF     = 'EOF'
 
-# ── Tokens para condicionales y ciclos ───────────────────
+# Tokens para estructuras de control.
 IF       = 'IF'
 ELSE     = 'ELSE'
 END      = 'END'
@@ -24,15 +25,16 @@ GT       = 'GT'       # >
 LTE      = 'LTE'      # <=
 GTE      = 'GTE'      # >=
 
-# ── Tokens para arreglos ──────────────────────────────────
+# Tokens para arreglos.
 LBRACKET = 'LBRACKET'  # [
 RBRACKET = 'RBRACKET'  # ]
 COMMA    = 'COMMA'     # ,
+POW      = 'POW'       # ^
 
-# ── Tokens para I/O ───────────────────────────────────────
+# Tokens de entrada/salida.
 PRINT    = 'PRINT'
 
-# ── Tokens para funciones ─────────────────────────────────
+# Tokens para funciones.
 FUN      = 'FUN'
 RETURN   = 'RETURN'
 
@@ -51,7 +53,7 @@ class LexerError(Exception):
     pass
 
 
-# Palabras reservadas → tipo de token
+# Palabras reservadas y su tipo de token.
 KEYWORDS = {
     'if':     IF,
     'else':   ELSE,
@@ -86,19 +88,19 @@ class DeepLangLexer:
         while self.pos < len(self.src):
             ch = self.current()
 
-            # WS -> skip  
+            # Ignoramos espacios y tabulaciones.
             if ch in (' ', '\t'):
                 self.advance()
                 continue
 
-            # NEWLINE : '\r'? '\n'
+            # Normalizamos saltos de línea como NEWLINE.
             if ch in ('\r', '\n'):
                 while self.current() in ('\r', '\n'):
                     self.advance()
                 tokens.append(Token(NEWLINE, '\n', self.line))
                 continue
 
-            # INT : [0-9]+
+            # Enteros.
             if ch.isdigit():
                 start = self.pos
                 line  = self.line
@@ -107,19 +109,41 @@ class DeepLangLexer:
                 tokens.append(Token(INT, self.src[start:self.pos], line))
                 continue
 
-            # ID / palabras reservadas : [a-zA-Z]+
+            # Cadenas entre comillas dobles.
+            if ch == '"':
+                line = self.line
+                self.advance()  # consume comilla de apertura
+                chars = []
+                while self.current() is not None and self.current() != '"':
+                    if self.current() == '\\':
+                        self.advance()
+                        esc = self.current()
+                        if esc is None:
+                            raise LexerError(f"Cadena sin cerrar en línea {line}")
+                        escapes = {'n': '\n', 't': '\t', '"': '"', '\\': '\\'}
+                        chars.append(escapes.get(esc, esc))
+                        self.advance()
+                    else:
+                        chars.append(self.advance())
+                if self.current() != '"':
+                    raise LexerError(f"Cadena sin cerrar en línea {line}")
+                self.advance()  # consume comilla de cierre
+                tokens.append(Token(STRING, ''.join(chars), line))
+                continue
+
+            # Identificadores o palabras reservadas.
             if ch.isalpha():
                 start = self.pos
                 line  = self.line
                 while self.current() and self.current().isalpha():
                     self.advance()
                 word = self.src[start:self.pos]
-                # ¿es palabra reservada?
+                # Si coincide con keyword, usamos su tipo.
                 tok_type = KEYWORDS.get(word, ID)
                 tokens.append(Token(tok_type, word, line))
                 continue
 
-            # ── Operadores de dos caracteres primero ──────
+            # Revisamos primero operadores de dos caracteres.
             two = self.src[self.pos:self.pos+2]
             if two == '==':
                 tokens.append(Token(EQ,  '==', self.line)); self.pos += 2; continue
@@ -135,6 +159,7 @@ class DeepLangLexer:
                 '/': DIV,
                 '+': ADD,
                 '-': SUB,
+                '^': POW,
                 '(': LPAREN,
                 ')': RPAREN,
                 '=': 'ASSIGN',

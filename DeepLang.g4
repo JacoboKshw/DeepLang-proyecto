@@ -20,18 +20,20 @@ condition: expr compOp expr ;
 compOp: '==' | '!=' | '<' | '>' | '<=' | '>=' ;
 
 expr:   expr op=('*'|'/') expr      # MulDiv
+    |   expr op='^' expr            # Pow
     |   expr op=('+'|'-') expr      # AddSub
     |   ID '(' args? ')'            # funcCall
     |   ID '[' expr ']'             # arrayAccess
     |   '[' (expr (',' expr)*)? ']' # arrayLiteral
     |   INT                         # int
+    |   STRING                      # string
     |   ID                          # id
     |   '(' expr ')'                # parens
     ;
 
 args: expr (',' expr)* ;
 
-// ── Tokens ─────────────────────────────────────────────────
+// Definición de tokens del lenguaje
 MUL     : '*' ;
 DIV     : '/' ;
 ADD     : '+' ;
@@ -45,7 +47,9 @@ GTE     : '>=' ;
 LBRACK  : '[' ;
 RBRACK  : ']' ;
 COMMA   : ',' ;
+POW     : '^' ;
 ID      : [a-zA-Z]+ ;
 INT     : [0-9]+ ;
+STRING  : '"' (~["\\] | '\\' .)* '"' ;
 NEWLINE : '\r'? '\n' ;
 WS      : [ \t]+ -> skip ;
