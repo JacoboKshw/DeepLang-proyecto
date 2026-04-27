@@ -12,7 +12,7 @@ from parser import (
 
 
 class ReturnSignal(Exception):
-    """Se lanza con return para salir del cuerpo de una función."""
+    """Excepción interna para cortar la ejecución al hacer return."""
     def __init__(self, value):
         self.value = value
 
@@ -23,8 +23,8 @@ class EvalVisitor:
     TWO_PI = 2 * PI
 
     def __init__(self):
-        self.memory    = {}   # variables globales
-        self.functions = {}   # nombre → FuncDefContext
+        self.memory    = {}   # Aquí viven las variables del programa.
+        self.functions = {}   # Guardamos funciones definidas por el usuario.
         self.builtins  = {
             'sen': (self._sin, 1),
             'sin': (self._sin, 1),
@@ -131,13 +131,9 @@ class EvalVisitor:
         if isinstance(ctx, ReturnContext):         return self.visitReturn(ctx)
         raise RuntimeError(f"Nodo desconocido: {type(ctx)}")
 
-    # ── visitProg ──────────────────────────────────────────
-
     def visitProg(self, ctx):
         for stat in ctx.stats:
             self.visit(stat)
-
-    # ── ID '=' expr NEWLINE ────────────────────────────────
 
     def visitAssign(self, ctx):
         id_   = ctx.name
@@ -145,19 +141,13 @@ class EvalVisitor:
         self.memory[id_] = value
         return value
 
-    # ── expr sola — evalúa pero NO imprime ────────────────
-
     def visitPrintExpr(self, ctx):
         return self.visit(ctx.expr)
-
-    # ── print(expr) — sí imprime ───────────────────────────
 
     def visitPrint(self, ctx):
         value = self.visit(ctx.expr)
         print(value)
         return value
-
-    # ── expr op=('*'|'/') expr ────────────────────────────
 
     def visitMulDiv(self, ctx):
         left  = self.visit(ctx.left)
@@ -168,16 +158,12 @@ class EvalVisitor:
             raise ZeroDivisionError("No se puede dividir entre cero")
         return left // right
 
-    # ── expr '^' expr ──────────────────────────────────────
-
     def visitPow(self, ctx):
         left  = self.visit(ctx.left)
         right = self.visit(ctx.right)
         if isinstance(right, float) and not right.is_integer():
             raise RuntimeError("El exponente en x^y debe ser entero")
         return left ** int(right)
-
-    # ── expr op=('+'|'-') expr ────────────────────────────
 
     def visitAddSub(self, ctx):
         left  = self.visit(ctx.left)
@@ -186,12 +172,8 @@ class EvalVisitor:
             return left + right
         return left - right
 
-    # ── INT ────────────────────────────────────────────────
-
     def visitInt(self, ctx):
         return ctx.value
-
-    # ── ID ─────────────────────────────────────────────────
 
     def visitId(self, ctx):
         id_ = ctx.name
@@ -199,15 +181,11 @@ class EvalVisitor:
             return self.memory[id_]
         return 0
 
-    # ── '(' expr ')' ───────────────────────────────────────
-
     def visitParens(self, ctx):
         return self.visit(ctx.expr)
 
-    # ── if cond then ... [else ...] end ────────────────────
-
     def visitIf(self, ctx):
-        # Evalúa la condición: True o False
+        # Primero revisamos si la condición se cumple.
         cond_result = self.visit(ctx.cond)
 
         if cond_result:
@@ -217,19 +195,13 @@ class EvalVisitor:
             for stat in ctx.else_stats:
                 self.visit(stat)
 
-    # ── while cond ... end ─────────────────────────────────
-
     def visitWhile(self, ctx):
         while self.visit(ctx.cond):
             for stat in ctx.stats:
                 self.visit(stat)
 
-    # ── [e1, e2, e3] ───────────────────────────────────────
-
     def visitArrayLiteral(self, ctx):
         return [self.visit(e) for e in ctx.elements]
-
-    # ── lista[i] ───────────────────────────────────────────
 
     def visitArrayAccess(self, ctx):
         arr   = self.memory.get(ctx.name)
@@ -241,8 +213,6 @@ class EvalVisitor:
                 f"Índice {index} fuera de rango para '{ctx.name}' (tamaño {len(arr)})"
             )
         return arr[index]
-
-    # ── lista[i] = expr ────────────────────────────────────
 
     def visitArrayAssign(self, ctx):
         arr = self.memory.get(ctx.name)
@@ -257,13 +227,9 @@ class EvalVisitor:
         arr[index] = value
         return value
 
-    # ── fun nombre(params) body end ────────────────────────
-
     def visitFuncDef(self, ctx):
-        # solo guarda la definición, no ejecuta nada
+        # Definir una función solo la registra; no se ejecuta aquí.
         self.functions[ctx.name] = ctx
-
-    # ── nombre(args) ───────────────────────────────────────
 
     def visitFuncCall(self, ctx):
         if ctx.name in self.builtins:
@@ -286,16 +252,16 @@ class EvalVisitor:
                 f"recibió {len(ctx.args)}"
             )
 
-        # evaluar argumentos en el ámbito actual
+        # Los argumentos se evalúan en el contexto actual.
         valores = [self.visit(a) for a in ctx.args]
 
-        # guardar memoria actual y crear ámbito local
+        # Creamos un alcance local para la ejecución de la función.
         memoria_anterior = self.memory.copy()
-        self.memory = memoria_anterior.copy()   # hereda variables globales
+        self.memory = memoria_anterior.copy()   # Partimos del estado global actual.
         for param, val in zip(func.params, valores):
             self.memory[param] = val
 
-        # ejecutar cuerpo — capturar return
+        # Ejecutamos el cuerpo y capturamos un posible return.
         resultado = 0
         try:
             for stat in func.body:
@@ -303,17 +269,13 @@ class EvalVisitor:
         except ReturnSignal as r:
             resultado = r.value
 
-        # restaurar memoria anterior
+        # Al terminar, restauramos el estado anterior.
         self.memory = memoria_anterior
         return resultado
-
-    # ── return expr ────────────────────────────────────────
 
     def visitReturn(self, ctx):
         value = self.visit(ctx.expr)
         raise ReturnSignal(value)
-
-    # ── Condición: expr op expr ────────────────────────────
 
     def visitCondition(self, ctx):
         left  = self.visit(ctx.left)
