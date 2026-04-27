@@ -1,9 +1,9 @@
 # EvalVisitor.py
 
-from lexer  import MUL, DIV, ADD, SUB, EQ, NEQ, LT, GT, LTE, GTE
+from lexer  import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
-    MulDivContext, AddSubContext,
+    MulDivContext, AddSubContext, PowContext,
     IntContext, IdContext, ParensContext,
     IfContext, ConditionContext, WhileContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
@@ -12,16 +12,102 @@ from parser import (
 
 
 class ReturnSignal(Exception):
-    """Se lanza con return para salir del cuerpo de una función."""
+    """Excepción interna para cortar la ejecución al hacer return."""
     def __init__(self, value):
         self.value = value
 
 
 class EvalVisitor:
 
+    PI = 3.141592653589793
+    TWO_PI = 2 * PI
+
     def __init__(self):
-        self.memory    = {}   # variables globales
-        self.functions = {}   # nombre → FuncDefContext
+        self.memory    = {}   # Aquí viven las variables del programa.
+        self.functions = {}   # Guardamos funciones definidas por el usuario.
+        self.builtins  = {
+            'sen': (self._sin, 1),
+            'sin': (self._sin, 1),
+            'cos': (self._cos, 1),
+            'tan': (self._tan, 1),
+            'cosecante': (self._csc, 1),
+            'csc': (self._csc, 1),
+            'secante': (self._sec, 1),
+            'sec': (self._sec, 1),
+            'cotangente': (self._cot, 1),
+            'cot': (self._cot, 1),
+            'ctg': (self._cot, 1),
+            'modulo': (self._mod, 2),
+            'mod': (self._mod, 2),
+            'raiz': (self._sqrt, 1),
+        }
+
+    def _normalize_angle(self, x):
+        """Reduce x al rango [-pi, pi] para mejorar convergencia."""
+        x = x % self.TWO_PI
+        if x > self.PI:
+            x -= self.TWO_PI
+        return x
+
+    def _sin(self, x):
+        x = self._normalize_angle(x)
+        term = x
+        result = x
+        # Serie de Taylor de sin(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n) * (2 * n + 1))
+            result += term
+        return result
+
+    def _cos(self, x):
+        x = self._normalize_angle(x)
+        term = 1.0
+        result = 1.0
+        # Serie de Taylor de cos(x)
+        for n in range(1, 12):
+            term *= -1 * x * x / ((2 * n - 1) * (2 * n))
+            result += term
+        return result
+
+    def _tan(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("tan(x) indefinida cuando cos(x) = 0")
+        return self._sin(x) / c
+
+    def _sec(self, x):
+        c = self._cos(x)
+        if -1e-12 < c < 1e-12:
+            raise ZeroDivisionError("sec(x) indefinida cuando cos(x) = 0")
+        return 1.0 / c
+
+    def _csc(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cosecante(x) indefinida cuando sen(x) = 0")
+        return 1.0 / s
+
+    def _cot(self, x):
+        s = self._sin(x)
+        if -1e-12 < s < 1e-12:
+            raise ZeroDivisionError("cotangente(x) indefinida cuando sen(x) = 0")
+        return self._cos(x) / s
+
+    def _mod(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("modulo(a, b) indefinida cuando b = 0")
+        return a % b
+
+    def _sqrt(self, x):
+        if x < 0:
+            raise RuntimeError("raiz(x) no está definida para x < 0")
+        if x == 0:
+            return 0.0
+        guess = x if x >= 1 else 1.0
+        # Método de Newton-Raphson
+        for _ in range(25):
+            guess = 0.5 * (guess + x / guess)
+        return guess
 
     def visit(self, ctx):
         if isinstance(ctx, ProgContext):       return self.visitProg(ctx)
@@ -29,6 +115,7 @@ class EvalVisitor:
         if isinstance(ctx, PrintExprContext):  return self.visitPrintExpr(ctx)
         if isinstance(ctx, PrintContext):      return self.visitPrint(ctx)
         if isinstance(ctx, MulDivContext):     return self.visitMulDiv(ctx)
+        if isinstance(ctx, PowContext):        return self.visitPow(ctx)
         if isinstance(ctx, AddSubContext):     return self.visitAddSub(ctx)
         if isinstance(ctx, IntContext):        return self.visitInt(ctx)
         if isinstance(ctx, IdContext):         return self.visitId(ctx)
@@ -44,13 +131,9 @@ class EvalVisitor:
         if isinstance(ctx, ReturnContext):         return self.visitReturn(ctx)
         raise RuntimeError(f"Nodo desconocido: {type(ctx)}")
 
-    # ── visitProg ──────────────────────────────────────────
-
     def visitProg(self, ctx):
         for stat in ctx.stats:
             self.visit(stat)
-
-    # ── ID '=' expr NEWLINE ────────────────────────────────
 
     def visitAssign(self, ctx):
         id_   = ctx.name
@@ -58,19 +141,13 @@ class EvalVisitor:
         self.memory[id_] = value
         return value
 
-    # ── expr sola — evalúa pero NO imprime ────────────────
-
     def visitPrintExpr(self, ctx):
         return self.visit(ctx.expr)
-
-    # ── print(expr) — sí imprime ───────────────────────────
 
     def visitPrint(self, ctx):
         value = self.visit(ctx.expr)
         print(value)
         return value
-
-    # ── expr op=('*'|'/') expr ────────────────────────────
 
     def visitMulDiv(self, ctx):
         left  = self.visit(ctx.left)
@@ -81,7 +158,12 @@ class EvalVisitor:
             raise ZeroDivisionError("No se puede dividir entre cero")
         return left // right
 
-    # ── expr op=('+'|'-') expr ────────────────────────────
+    def visitPow(self, ctx):
+        left  = self.visit(ctx.left)
+        right = self.visit(ctx.right)
+        if isinstance(right, float) and not right.is_integer():
+            raise RuntimeError("El exponente en x^y debe ser entero")
+        return left ** int(right)
 
     def visitAddSub(self, ctx):
         left  = self.visit(ctx.left)
@@ -90,12 +172,8 @@ class EvalVisitor:
             return left + right
         return left - right
 
-    # ── INT ────────────────────────────────────────────────
-
     def visitInt(self, ctx):
         return ctx.value
-
-    # ── ID ─────────────────────────────────────────────────
 
     def visitId(self, ctx):
         id_ = ctx.name
@@ -103,15 +181,11 @@ class EvalVisitor:
             return self.memory[id_]
         return 0
 
-    # ── '(' expr ')' ───────────────────────────────────────
-
     def visitParens(self, ctx):
         return self.visit(ctx.expr)
 
-    # ── if cond then ... [else ...] end ────────────────────
-
     def visitIf(self, ctx):
-        # Evalúa la condición: True o False
+        # Primero revisamos si la condición se cumple.
         cond_result = self.visit(ctx.cond)
 
         if cond_result:
@@ -121,19 +195,13 @@ class EvalVisitor:
             for stat in ctx.else_stats:
                 self.visit(stat)
 
-    # ── while cond ... end ─────────────────────────────────
-
     def visitWhile(self, ctx):
         while self.visit(ctx.cond):
             for stat in ctx.stats:
                 self.visit(stat)
 
-    # ── [e1, e2, e3] ───────────────────────────────────────
-
     def visitArrayLiteral(self, ctx):
         return [self.visit(e) for e in ctx.elements]
-
-    # ── lista[i] ───────────────────────────────────────────
 
     def visitArrayAccess(self, ctx):
         arr   = self.memory.get(ctx.name)
@@ -145,8 +213,6 @@ class EvalVisitor:
                 f"Índice {index} fuera de rango para '{ctx.name}' (tamaño {len(arr)})"
             )
         return arr[index]
-
-    # ── lista[i] = expr ────────────────────────────────────
 
     def visitArrayAssign(self, ctx):
         arr = self.memory.get(ctx.name)
@@ -161,15 +227,20 @@ class EvalVisitor:
         arr[index] = value
         return value
 
-    # ── fun nombre(params) body end ────────────────────────
-
     def visitFuncDef(self, ctx):
-        # solo guarda la definición, no ejecuta nada
+        # Definir una función solo la registra; no se ejecuta aquí.
         self.functions[ctx.name] = ctx
 
-    # ── nombre(args) ───────────────────────────────────────
-
     def visitFuncCall(self, ctx):
+        if ctx.name in self.builtins:
+            builtin_fn, arity = self.builtins[ctx.name]
+            if len(ctx.args) != arity:
+                raise RuntimeError(
+                    f"'{ctx.name}' espera {arity} argumento(s), recibió {len(ctx.args)}"
+                )
+            values = [self.visit(arg) for arg in ctx.args]
+            return builtin_fn(*values)
+
         if ctx.name not in self.functions:
             raise RuntimeError(f"Función '{ctx.name}' no definida")
 
@@ -181,16 +252,16 @@ class EvalVisitor:
                 f"recibió {len(ctx.args)}"
             )
 
-        # evaluar argumentos en el ámbito actual
+        # Los argumentos se evalúan en el contexto actual.
         valores = [self.visit(a) for a in ctx.args]
 
-        # guardar memoria actual y crear ámbito local
+        # Creamos un alcance local para la ejecución de la función.
         memoria_anterior = self.memory.copy()
-        self.memory = memoria_anterior.copy()   # hereda variables globales
+        self.memory = memoria_anterior.copy()   # Partimos del estado global actual.
         for param, val in zip(func.params, valores):
             self.memory[param] = val
 
-        # ejecutar cuerpo — capturar return
+        # Ejecutamos el cuerpo y capturamos un posible return.
         resultado = 0
         try:
             for stat in func.body:
@@ -198,17 +269,13 @@ class EvalVisitor:
         except ReturnSignal as r:
             resultado = r.value
 
-        # restaurar memoria anterior
+        # Al terminar, restauramos el estado anterior.
         self.memory = memoria_anterior
         return resultado
-
-    # ── return expr ────────────────────────────────────────
 
     def visitReturn(self, ctx):
         value = self.visit(ctx.expr)
         raise ReturnSignal(value)
-
-    # ── Condición: expr op expr ────────────────────────────
 
     def visitCondition(self, ctx):
         left  = self.visit(ctx.left)
