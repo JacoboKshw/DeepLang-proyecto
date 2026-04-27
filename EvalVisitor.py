@@ -252,7 +252,7 @@ class EvalVisitor:
                 f"recibió {len(ctx.args)}"
             )
 
-        # Los argumentos se evalúan en el contexto actual.
+        # Los argumentos se evalúan en el contexto actual
         valores = [self.visit(a) for a in ctx.args]
 
         # Creamos un alcance local para la ejecución de la función.
