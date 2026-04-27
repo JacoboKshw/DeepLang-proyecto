@@ -26,13 +26,14 @@ expr:   expr op=('*'|'/') expr      # MulDiv
     |   ID '[' expr ']'             # arrayAccess
     |   '[' (expr (',' expr)*)? ']' # arrayLiteral
     |   INT                         # int
+    |   STRING                      # string
     |   ID                          # id
     |   '(' expr ')'                # parens
     ;
 
 args: expr (',' expr)* ;
 
-// Definición de tokens del lenguaje.
+// Definición de tokens del lenguaje
 MUL     : '*' ;
 DIV     : '/' ;
 ADD     : '+' ;
@@ -49,5 +50,6 @@ COMMA   : ',' ;
 POW     : '^' ;
 ID      : [a-zA-Z]+ ;
 INT     : [0-9]+ ;
+STRING  : '"' (~["\\] | '\\' .)* '"' ;
 NEWLINE : '\r'? '\n' ;
 WS      : [ \t]+ -> skip ;

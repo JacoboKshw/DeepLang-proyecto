@@ -1,7 +1,7 @@
 # parser.py
 
 from lexer import (
-    MUL, DIV, ADD, SUB, POW, ID, INT, NEWLINE, LPAREN, RPAREN, EOF,
+    MUL, DIV, ADD, SUB, POW, ID, INT, STRING, NEWLINE, LPAREN, RPAREN, EOF,
     IF, ELSE, END, WHILE,
     EQ, NEQ, LT, GT, LTE, GTE,
     LBRACKET, RBRACKET, COMMA,
@@ -66,6 +66,12 @@ class AddSubContext:
 
 class IntContext:
     """Literal entero."""
+    def __init__(self, value):
+        self.value = value
+
+
+class StringContext:
+    """Literal de texto."""
     def __init__(self, value):
         self.value = value
 
@@ -164,7 +170,7 @@ class ReturnContext:
         self.expr = expr
 
 
-# Parser principal
+# Parser principal de DeepLang
 
 class DeepLangParser:
 
@@ -442,6 +448,11 @@ class DeepLangParser:
         if tok.type == INT:
             self.consume()
             return IntContext(int(tok.text))
+
+        # Texto entre comillas.
+        if tok.type == STRING:
+            self.consume()
+            return StringContext(tok.text)
 
         # Paréntesis.
         if tok.type == LPAREN:

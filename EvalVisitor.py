@@ -4,7 +4,7 @@ from lexer  import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
     MulDivContext, AddSubContext, PowContext,
-    IntContext, IdContext, ParensContext,
+    IntContext, StringContext, IdContext, ParensContext,
     IfContext, ConditionContext, WhileContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
     FuncDefContext, FuncCallContext, ReturnContext,
@@ -118,6 +118,7 @@ class EvalVisitor:
         if isinstance(ctx, PowContext):        return self.visitPow(ctx)
         if isinstance(ctx, AddSubContext):     return self.visitAddSub(ctx)
         if isinstance(ctx, IntContext):        return self.visitInt(ctx)
+        if isinstance(ctx, StringContext):     return self.visitString(ctx)
         if isinstance(ctx, IdContext):         return self.visitId(ctx)
         if isinstance(ctx, ParensContext):     return self.visitParens(ctx)
         if isinstance(ctx, IfContext):            return self.visitIf(ctx)
@@ -173,6 +174,9 @@ class EvalVisitor:
         return left - right
 
     def visitInt(self, ctx):
+        return ctx.value
+
+    def visitString(self, ctx):
         return ctx.value
 
     def visitId(self, ctx):
@@ -252,7 +256,7 @@ class EvalVisitor:
                 f"recibió {len(ctx.args)}"
             )
 
-        # Los argumentos se evalúan en el contexto actual
+        # Los argumentos se evalúan en el contexto actual.
         valores = [self.visit(a) for a in ctx.args]
 
         # Creamos un alcance local para la ejecución de la función.

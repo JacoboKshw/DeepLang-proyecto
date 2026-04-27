@@ -7,12 +7,13 @@ ADD     = 'ADD'
 SUB     = 'SUB'
 ID      = 'ID'
 INT     = 'INT'
+STRING  = 'STRING'
 NEWLINE = 'NEWLINE'
 LPAREN  = 'LPAREN'
 RPAREN  = 'RPAREN'
 EOF     = 'EOF'
 
-# Tokens para estructuras de control
+# Tokens para estructuras de control.
 IF       = 'IF'
 ELSE     = 'ELSE'
 END      = 'END'
@@ -106,6 +107,28 @@ class DeepLangLexer:
                 while self.current() and self.current().isdigit():
                     self.advance()
                 tokens.append(Token(INT, self.src[start:self.pos], line))
+                continue
+
+            # Cadenas entre comillas dobles.
+            if ch == '"':
+                line = self.line
+                self.advance()  # consume comilla de apertura
+                chars = []
+                while self.current() is not None and self.current() != '"':
+                    if self.current() == '\\':
+                        self.advance()
+                        esc = self.current()
+                        if esc is None:
+                            raise LexerError(f"Cadena sin cerrar en línea {line}")
+                        escapes = {'n': '\n', 't': '\t', '"': '"', '\\': '\\'}
+                        chars.append(escapes.get(esc, esc))
+                        self.advance()
+                    else:
+                        chars.append(self.advance())
+                if self.current() != '"':
+                    raise LexerError(f"Cadena sin cerrar en línea {line}")
+                self.advance()  # consume comilla de cierre
+                tokens.append(Token(STRING, ''.join(chars), line))
                 continue
 
             # Identificadores o palabras reservadas.
