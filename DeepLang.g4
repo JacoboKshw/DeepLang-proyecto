@@ -32,7 +32,7 @@ expr:   expr op=('*'|'/') expr      # MulDiv
 
 args: expr (',' expr)* ;
 
-// Definición de tokens del lenguaje
+// Definición de tokens del lenguaje.
 MUL     : '*' ;
 DIV     : '/' ;
 ADD     : '+' ;
