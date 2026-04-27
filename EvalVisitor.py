@@ -3,7 +3,7 @@
 from lexer  import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
-    MulDivContext, AddSubContext, PowContext,
+    MulDivContext, AddSubContext, PowContext, UnaryMinusContext,
     IntContext, StringContext, IdContext, ParensContext,
     IfContext, ConditionContext, WhileContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
@@ -117,6 +117,7 @@ class EvalVisitor:
         if isinstance(ctx, MulDivContext):     return self.visitMulDiv(ctx)
         if isinstance(ctx, PowContext):        return self.visitPow(ctx)
         if isinstance(ctx, AddSubContext):     return self.visitAddSub(ctx)
+        if isinstance(ctx, UnaryMinusContext): return self.visitUnaryMinus(ctx)
         if isinstance(ctx, IntContext):        return self.visitInt(ctx)
         if isinstance(ctx, StringContext):     return self.visitString(ctx)
         if isinstance(ctx, IdContext):         return self.visitId(ctx)
@@ -172,6 +173,9 @@ class EvalVisitor:
         if ctx.op.type == ADD:
             return left + right
         return left - right
+
+    def visitUnaryMinus(self, ctx):
+        return -self.visit(ctx.expr)
 
     def visitInt(self, ctx):
         return ctx.value

@@ -22,6 +22,7 @@ compOp: '==' | '!=' | '<' | '>' | '<=' | '>=' ;
 expr:   expr op=('*'|'/') expr      # MulDiv
     |   expr op='^' expr            # Pow
     |   expr op=('+'|'-') expr      # AddSub
+    |   '-' expr                    # unaryMinus
     |   ID '(' args? ')'            # funcCall
     |   ID '[' expr ']'             # arrayAccess
     |   '[' (expr (',' expr)*)? ']' # arrayLiteral

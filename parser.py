@@ -64,6 +64,12 @@ class AddSubContext:
         self.right = right
 
 
+class UnaryMinusContext:
+    """Negación unaria: -expr."""
+    def __init__(self, expr):
+        self.expr = expr
+
+
 class IntContext:
     """Literal entero."""
     def __init__(self, value):
@@ -431,6 +437,11 @@ class DeepLangParser:
 
     def _primary(self):
         tok = self.current()
+
+        # Negación unaria.
+        if tok.type == SUB:
+            self.consume()
+            return UnaryMinusContext(self._primary())
 
         # Literal de arreglo: [expr, expr, ...]
         if tok.type == LBRACKET:
