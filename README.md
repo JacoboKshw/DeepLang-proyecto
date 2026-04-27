@@ -153,12 +153,14 @@ print(cosecante(x))
 print(secante(x))
 print(cotangente(x))
 print(modulo(10, 3))
+print(raiz(9))
 ```
 
 - `sen`, `cos`, `tan`, `cosecante`, `secante` y `cotangente` reciben **1 argumento**.
 - `sin` también está disponible como alias de `sen`.
 - También hay alias cortos: `csc`, `sec`, `cot` y `ctg`.
 - `modulo(a, b)` (alias `mod(a, b)`) calcula el residuo de `a % b`.
+- `raiz(x)` calcula raíz cuadrada de `x`.
 - El argumento está en **radianes**.
 - Están implementadas desde cero en el intérprete (series de Taylor).
 

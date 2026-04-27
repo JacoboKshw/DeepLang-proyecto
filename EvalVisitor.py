@@ -39,6 +39,7 @@ class EvalVisitor:
             'ctg': (self._cot, 1),
             'modulo': (self._mod, 2),
             'mod': (self._mod, 2),
+            'raiz': (self._sqrt, 1),
         }
 
     def _normalize_angle(self, x):
@@ -96,6 +97,17 @@ class EvalVisitor:
         if b == 0:
             raise ZeroDivisionError("modulo(a, b) indefinida cuando b = 0")
         return a % b
+
+    def _sqrt(self, x):
+        if x < 0:
+            raise RuntimeError("raiz(x) no está definida para x < 0")
+        if x == 0:
+            return 0.0
+        guess = x if x >= 1 else 1.0
+        # Método de Newton-Raphson
+        for _ in range(25):
+            guess = 0.5 * (guess + x / guess)
+        return guess
 
     def visit(self, ctx):
         if isinstance(ctx, ProgContext):       return self.visitProg(ctx)
