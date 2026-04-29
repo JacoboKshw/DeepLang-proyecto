@@ -5,7 +5,7 @@ from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
     MulDivContext, AddSubContext, PowContext, UnaryMinusContext,
     IntContext, StringContext, IdContext, ParensContext,
-    IfContext, ConditionContext, WhileContext,
+    IfContext, ConditionContext, WhileContext, ForContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
     FuncDefContext, FuncCallContext, ReturnContext,
 )
@@ -13,7 +13,7 @@ from deeplang_filelib import DeepLangFileLib
 
 
 class ReturnSignal(Exception):
-    """Excepción interna para cortar la ejecución al hacer return. """
+    """Excepción interna para cortar la ejecución al hacer return."""
     def __init__(self, value):
         self.value = value
 
@@ -24,8 +24,8 @@ class EvalVisitor:
     TWO_PI = 2 * PI
 
     def __init__(self):
-        self.memory    = {}   # Aquí viven las variables del programa.
-        self.functions = {}   # Guardamos funciones definidas por el usuario.
+        self.memory    = {}
+        self.functions = {}
         filelib = DeepLangFileLib()
         self.builtins  = {
             'sen': (self._sin, 1),
@@ -47,7 +47,6 @@ class EvalVisitor:
         }
 
     def _normalize_angle(self, x):
-        """Reduce x al rango [-pi, pi] para mejorar convergencia."""
         x = x % self.TWO_PI
         if x > self.PI:
             x -= self.TWO_PI
@@ -57,7 +56,6 @@ class EvalVisitor:
         x = self._normalize_angle(x)
         term = x
         result = x
-        # Serie de Taylor de sin(x)
         for n in range(1, 12):
             term *= -1 * x * x / ((2 * n) * (2 * n + 1))
             result += term
@@ -67,7 +65,6 @@ class EvalVisitor:
         x = self._normalize_angle(x)
         term = 1.0
         result = 1.0
-        # Serie de Taylor de cos(x)
         for n in range(1, 12):
             term *= -1 * x * x / ((2 * n - 1) * (2 * n))
             result += term
@@ -108,33 +105,33 @@ class EvalVisitor:
         if x == 0:
             return 0.0
         guess = x if x >= 1 else 1.0
-        # Método de Newton-Raphson
         for _ in range(25):
             guess = 0.5 * (guess + x / guess)
         return guess
 
     def visit(self, ctx):
-        if isinstance(ctx, ProgContext):       return self.visitProg(ctx)
-        if isinstance(ctx, AssignContext):     return self.visitAssign(ctx)
-        if isinstance(ctx, PrintExprContext):  return self.visitPrintExpr(ctx)
-        if isinstance(ctx, PrintContext):      return self.visitPrint(ctx)
-        if isinstance(ctx, MulDivContext):     return self.visitMulDiv(ctx)
-        if isinstance(ctx, PowContext):        return self.visitPow(ctx)
-        if isinstance(ctx, AddSubContext):     return self.visitAddSub(ctx)
-        if isinstance(ctx, UnaryMinusContext): return self.visitUnaryMinus(ctx)
-        if isinstance(ctx, IntContext):        return self.visitInt(ctx)
-        if isinstance(ctx, StringContext):     return self.visitString(ctx)
-        if isinstance(ctx, IdContext):         return self.visitId(ctx)
-        if isinstance(ctx, ParensContext):     return self.visitParens(ctx)
+        if isinstance(ctx, ProgContext):          return self.visitProg(ctx)
+        if isinstance(ctx, AssignContext):        return self.visitAssign(ctx)
+        if isinstance(ctx, PrintExprContext):     return self.visitPrintExpr(ctx)
+        if isinstance(ctx, PrintContext):         return self.visitPrint(ctx)
+        if isinstance(ctx, MulDivContext):        return self.visitMulDiv(ctx)
+        if isinstance(ctx, PowContext):           return self.visitPow(ctx)
+        if isinstance(ctx, AddSubContext):        return self.visitAddSub(ctx)
+        if isinstance(ctx, UnaryMinusContext):    return self.visitUnaryMinus(ctx)
+        if isinstance(ctx, IntContext):           return self.visitInt(ctx)
+        if isinstance(ctx, StringContext):        return self.visitString(ctx)
+        if isinstance(ctx, IdContext):            return self.visitId(ctx)
+        if isinstance(ctx, ParensContext):        return self.visitParens(ctx)
         if isinstance(ctx, IfContext):            return self.visitIf(ctx)
         if isinstance(ctx, ConditionContext):     return self.visitCondition(ctx)
         if isinstance(ctx, WhileContext):         return self.visitWhile(ctx)
+        if isinstance(ctx, ForContext):           return self.visitFor(ctx)
         if isinstance(ctx, ArrayLiteralContext):  return self.visitArrayLiteral(ctx)
         if isinstance(ctx, ArrayAccessContext):   return self.visitArrayAccess(ctx)
         if isinstance(ctx, ArrayAssignContext):   return self.visitArrayAssign(ctx)
-        if isinstance(ctx, FuncDefContext):        return self.visitFuncDef(ctx)
-        if isinstance(ctx, FuncCallContext):       return self.visitFuncCall(ctx)
-        if isinstance(ctx, ReturnContext):         return self.visitReturn(ctx)
+        if isinstance(ctx, FuncDefContext):       return self.visitFuncDef(ctx)
+        if isinstance(ctx, FuncCallContext):      return self.visitFuncCall(ctx)
+        if isinstance(ctx, ReturnContext):        return self.visitReturn(ctx)
         raise RuntimeError(f"Nodo desconocido: {type(ctx)}")
 
     def visitProg(self, ctx):
@@ -197,9 +194,7 @@ class EvalVisitor:
         return self.visit(ctx.expr)
 
     def visitIf(self, ctx):
-        # Primero revisamos si la condición se cumple.
         cond_result = self.visit(ctx.cond)
-
         if cond_result:
             for stat in ctx.then_stats:
                 self.visit(stat)
@@ -211,6 +206,15 @@ class EvalVisitor:
         while self.visit(ctx.cond):
             for stat in ctx.stats:
                 self.visit(stat)
+
+    def visitFor(self, ctx):
+        start = self.visit(ctx.start)
+        end_  = self.visit(ctx.end_)
+        self.memory[ctx.var] = start
+        while self.memory[ctx.var] <= end_:
+            for stat in ctx.body:
+                self.visit(stat)
+            self.memory[ctx.var] += 1
 
     def visitArrayLiteral(self, ctx):
         return [self.visit(e) for e in ctx.elements]
@@ -240,7 +244,6 @@ class EvalVisitor:
         return value
 
     def visitFuncDef(self, ctx):
-        # Definir una función solo la registra; no se ejecuta aquí.
         self.functions[ctx.name] = ctx
 
     def visitFuncCall(self, ctx):
@@ -264,16 +267,13 @@ class EvalVisitor:
                 f"recibió {len(ctx.args)}"
             )
 
-        # Los argumentos se evalúan en el contexto actual.
         valores = [self.visit(a) for a in ctx.args]
 
-        # Creamos un alcance local para la ejecución de la función.
         memoria_anterior = self.memory.copy()
-        self.memory = memoria_anterior.copy()   # Partimos del estado global actual.
+        self.memory = memoria_anterior.copy()
         for param, val in zip(func.params, valores):
             self.memory[param] = val
 
-        # Ejecutamos el cuerpo y capturamos un posible return.
         resultado = 0
         try:
             for stat in func.body:
@@ -281,7 +281,6 @@ class EvalVisitor:
         except ReturnSignal as r:
             resultado = r.value
 
-        # Al terminar, restauramos el estado anterior.
         self.memory = memoria_anterior
         return resultado
 
