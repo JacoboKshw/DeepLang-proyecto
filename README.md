@@ -164,6 +164,22 @@ print(raiz(9))
 - El argumento está en **radianes**.
 - Están implementadas desde cero en el intérprete (series de Taylor).
 
+### Librería de lectura de archivos
+
+DeepLang incluye funciones integradas para leer archivos de texto sin usar una librería `sys`:
+
+```
+contenido = leerarchivo("datos.txt")
+print(contenido)
+
+lineas = leerlineas("datos.txt")
+print(lineas[0])
+```
+
+- `leerarchivo(ruta)` devuelve todo el contenido como texto (`string`).
+- `leerlineas(ruta)` devuelve un arreglo con cada línea del archivo.
+- Si la ruta no existe o no se puede leer, el intérprete muestra un error claro.
+
 ---
 
 ### Potencias
