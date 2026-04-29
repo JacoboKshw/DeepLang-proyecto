@@ -3,16 +3,14 @@
 Este módulo expone utilidades de solo lectura para evitar depender de `sys`.
 """
 
-from pathlib import Path
-
-
 class DeepLangFileLib:
     """Funciones de lectura de archivos para integrarse como builtins."""
 
     def leerarchivo(self, ruta):
         ruta_str = self._validar_ruta(ruta)
         try:
-            return Path(ruta_str).read_text(encoding="utf-8")
+            with open(ruta_str, "r", encoding="utf-8") as archivo:
+                return archivo.read()
         except FileNotFoundError as exc:
             raise RuntimeError(f"No existe el archivo: {ruta_str}") from exc
         except IsADirectoryError as exc:
