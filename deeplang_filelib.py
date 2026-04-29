@@ -1,6 +1,4 @@
 """Librería estándar de DeepLang para lectura de archivos.
-
-Este módulo expone utilidades de solo lectura para evitar depender de `sys`.
 """
 
 class DeepLangFileLib:
