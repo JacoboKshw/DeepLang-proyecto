@@ -18,6 +18,8 @@ IF       = 'IF'
 ELSE     = 'ELSE'
 END      = 'END'
 WHILE    = 'WHILE'
+FOR      = 'FOR'
+TO       = 'TO'
 EQ       = 'EQ'       # ==
 NEQ      = 'NEQ'      # !=
 LT       = 'LT'       # <
@@ -41,8 +43,8 @@ RETURN   = 'RETURN'
 
 class Token:
     def __init__(self, type_, text, line):
-        self.type = type_  
-        self.text = text    
+        self.type = type_
+        self.text = text
         self.line = line
 
     def __repr__(self):
@@ -59,6 +61,8 @@ KEYWORDS = {
     'else':   ELSE,
     'end':    END,
     'while':  WHILE,
+    'for':    FOR,
+    'to':     TO,
     'print':  PRINT,
     'fun':    FUN,
     'return': RETURN,
@@ -112,7 +116,7 @@ class DeepLangLexer:
             # Cadenas entre comillas dobles.
             if ch == '"':
                 line = self.line
-                self.advance()  # consume comilla de apertura
+                self.advance()
                 chars = []
                 while self.current() is not None and self.current() != '"':
                     if self.current() == '\\':
@@ -127,7 +131,7 @@ class DeepLangLexer:
                         chars.append(self.advance())
                 if self.current() != '"':
                     raise LexerError(f"Cadena sin cerrar en línea {line}")
-                self.advance()  # consume comilla de cierre
+                self.advance()
                 tokens.append(Token(STRING, ''.join(chars), line))
                 continue
 
@@ -138,7 +142,6 @@ class DeepLangLexer:
                 while self.current() and self.current().isalpha():
                     self.advance()
                 word = self.src[start:self.pos]
-                # Si coincide con keyword, usamos su tipo.
                 tok_type = KEYWORDS.get(word, ID)
                 tokens.append(Token(tok_type, word, line))
                 continue
