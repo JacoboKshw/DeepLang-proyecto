@@ -1,0 +1,17 @@
+fun factorial(n)
+  if n == 0
+    return 1
+ end
+ return n * factorial(n - 1)
+end
+
+fun taylor(x, n)
+ suma = 0
+ for i = 0 to n
+    termino = (x ^ i) / factorial(i)
+    suma = suma + termino
+ end
+ return suma
+end
+
+print(taylor(1, 10))

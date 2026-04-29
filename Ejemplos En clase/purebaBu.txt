@@ -1,0 +1,19 @@
+fun burbuja(lista, n)
+  for i = 0 to n - 1
+  for j = 0 to n - i - 2
+   if lista[j] > lista[j + 1]
+        temp = lista[j]
+        lista[j] = lista[j + 1]
+        lista[j + 1] = temp
+    end
+  end
+end
+ return lista 
+end
+
+nums = [5, 3, 8, 1, 9, 2]
+burbuja(nums, 6)
+
+for i = 0 to 5
+print(nums[i])
+end
