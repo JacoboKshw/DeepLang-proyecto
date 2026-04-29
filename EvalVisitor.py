@@ -13,7 +13,7 @@ from deeplang_filelib import DeepLangFileLib
 
 
 class ReturnSignal(Exception):
-    """Excepción interna para cortar la ejecución al hacer return."""
+    """Excepción interna para cortar la ejecución al hacer return. """
     def __init__(self, value):
         self.value = value
 
