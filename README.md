@@ -1,3 +1,7 @@
+Jacobo Mondragon
+
+Julian Gomez 
+
 # DeepLang
 
 DeepLang es un lenguaje de programación de dominio específico (DSL) diseñado para realizar operaciones aritméticas y lógicas. Está implementado en Python siguiendo el patrón de diseño Visitor.
