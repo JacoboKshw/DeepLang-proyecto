@@ -1,10 +1,9 @@
 # EvalVisitor.py
-
-from lexer  import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
+from lexer import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
     MulDivContext, AddSubContext, PowContext, UnaryMinusContext,
-    IntContext, StringContext, IdContext, ParensContext,
+    IntContext, FloatContext, StringContext, IdContext, ParensContext,
     IfContext, ConditionContext, WhileContext, ForContext,
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
     FuncDefContext, FuncCallContext, ReturnContext,
@@ -19,42 +18,60 @@ class ReturnSignal(Exception):
 
 
 class EvalVisitor:
-
-    PI = 3.141592653589793
+    PI     = 3.141592653589793
     TWO_PI = 2 * PI
 
     def __init__(self):
         self.memory    = {}
         self.functions = {}
         filelib = DeepLangFileLib()
-        self.builtins  = {
-            'sen': (self._sin, 1),
-            'sin': (self._sin, 1),
-            'cos': (self._cos, 1),
-            'tan': (self._tan, 1),
-            'cosecante': (self._csc, 1),
-            'csc': (self._csc, 1),
-            'secante': (self._sec, 1),
-            'sec': (self._sec, 1),
-            'cotangente': (self._cot, 1),
-            'cot': (self._cot, 1),
-            'ctg': (self._cot, 1),
-            'modulo': (self._mod, 2),
-            'mod': (self._mod, 2),
-            'raiz': (self._sqrt, 1),
-            'leerarchivo': (filelib.leerarchivo, 1),
-            'leerlineas': (filelib.leerlineas, 1),
+        self.builtins = {
+            # Trigonométricas
+            'sen':        (self._sin,  1),
+            'sin':        (self._sin,  1),
+            'cos':        (self._cos,  1),
+            'tan':        (self._tan,  1),
+            'cosecante':  (self._csc,  1),
+            'csc':        (self._csc,  1),
+            'secante':    (self._sec,  1),
+            'sec':        (self._sec,  1),
+            'cotangente': (self._cot,  1),
+            'cot':        (self._cot,  1),
+            'ctg':        (self._cot,  1),
+            # Matemáticas generales
+            'modulo':     (self._mod,   2),
+            'mod':        (self._mod,   2),
+            'raiz':       (self._sqrt,  1),
+            'abs':        (self._abs,   1),
+            'redondear':  (self._round, 2),   # redondear(x, decimales)
+            'piso':       (self._floor, 1),
+            'techo':      (self._ceil,  1),
+            'entero':     (self._int,   1),   # truncar a entero
+            'flotante':   (self._float, 1),   # convertir a float
+            'log':        (self._log,   1),   # log natural
+            'log10':      (self._log10, 1),
+            'exp':        (self._exp,   1),   # e^x
+            # Archivos
+            'leerarchivo':   (filelib.leerarchivo,   1),
+            'leerlineas':    (filelib.leerlineas,    1),
+            'escribirarchivo': (filelib.escribirarchivo, 2),  # path, texto
+            'agregararchivo':  (filelib.agregararchivo,  2),  # path, texto
+            # Utilidades de arreglos
+            'longitud':   (self._len,   1),
+            'len':        (self._len,   1),
         }
 
+    # ─── Normalizacion de angulos ────────────────────────────
     def _normalize_angle(self, x):
         x = x % self.TWO_PI
         if x > self.PI:
             x -= self.TWO_PI
         return x
 
+    # ─── Trigonométricas (series de Taylor) ──────────────────
     def _sin(self, x):
-        x = self._normalize_angle(x)
-        term = x
+        x      = self._normalize_angle(float(x))
+        term   = x
         result = x
         for n in range(1, 12):
             term *= -1 * x * x / ((2 * n) * (2 * n + 1))
@@ -62,8 +79,8 @@ class EvalVisitor:
         return result
 
     def _cos(self, x):
-        x = self._normalize_angle(x)
-        term = 1.0
+        x      = self._normalize_angle(float(x))
+        term   = 1.0
         result = 1.0
         for n in range(1, 12):
             term *= -1 * x * x / ((2 * n - 1) * (2 * n))
@@ -94,6 +111,7 @@ class EvalVisitor:
             raise ZeroDivisionError("cotangente(x) indefinida cuando sen(x) = 0")
         return self._cos(x) / s
 
+    # ─── Matemáticas generales ───────────────────────────────
     def _mod(self, a, b):
         if b == 0:
             raise ZeroDivisionError("modulo(a, b) indefinida cuando b = 0")
@@ -104,44 +122,122 @@ class EvalVisitor:
             raise RuntimeError("raiz(x) no está definida para x < 0")
         if x == 0:
             return 0.0
-        guess = x if x >= 1 else 1.0
-        for _ in range(25):
+        guess = float(x) if x >= 1 else 1.0
+        for _ in range(40):
             guess = 0.5 * (guess + x / guess)
         return guess
 
+    def _abs(self, x):
+        return x if x >= 0 else -x
+
+    def _round(self, x, decimals):
+        factor = 1.0
+        d = int(decimals)
+        for _ in range(d):
+            factor *= 10
+        if x >= 0:
+            return int(x * factor + 0.5) / factor
+        return -int(-x * factor + 0.5) / factor
+
+    def _floor(self, x):
+        if isinstance(x, int):
+            return x
+        n = int(x)
+        return n if x >= 0 or x == n else n - 1
+
+    def _ceil(self, x):
+        if isinstance(x, int):
+            return x
+        n = int(x)
+        return n if x <= 0 or x == n else n + 1
+
+    def _int(self, x):
+        return int(x)
+
+    def _float(self, x):
+        return float(x)
+
+    def _log(self, x):
+        """Logaritmo natural mediante serie de Padé / iteración de Newton."""
+        if x <= 0:
+            raise RuntimeError("log(x) no definido para x <= 0")
+        # Reducción: log(x) = log(m * 2^k) = log(m) + k*log(2)
+        # Normalizamos m en [1, 2)
+        k = 0
+        m = float(x)
+        ln2 = 0.6931471805599453
+        while m >= 2.0:
+            m /= 2.0
+            k += 1
+        while m < 1.0:
+            m *= 2.0
+            k -= 1
+        # Serie de Taylor de log alrededor de 1: y = m-1, log(1+y) = y - y²/2 + ...
+        y      = m - 1.0
+        term   = y
+        result = y
+        for n in range(2, 60):
+            term *= -y * (n - 1) / n
+            result += term
+            if abs(term) < 1e-15:
+                break
+        return result + k * ln2
+
+    def _log10(self, x):
+        return self._log(x) / self._log(10.0)
+
+    def _exp(self, x):
+        """e^x mediante serie de Taylor."""
+        x      = float(x)
+        term   = 1.0
+        result = 1.0
+        for n in range(1, 80):
+            term *= x / n
+            result += term
+            if abs(term) < 1e-15:
+                break
+        return result
+
+    def _len(self, arr):
+        if not isinstance(arr, list):
+            raise RuntimeError("longitud() espera un arreglo")
+        return len(arr)
+
+    # ─── Dispatcher principal ────────────────────────────────
     def visit(self, ctx):
-        if isinstance(ctx, ProgContext):          return self.visitProg(ctx)
-        if isinstance(ctx, AssignContext):        return self.visitAssign(ctx)
-        if isinstance(ctx, PrintExprContext):     return self.visitPrintExpr(ctx)
-        if isinstance(ctx, PrintContext):         return self.visitPrint(ctx)
-        if isinstance(ctx, MulDivContext):        return self.visitMulDiv(ctx)
-        if isinstance(ctx, PowContext):           return self.visitPow(ctx)
-        if isinstance(ctx, AddSubContext):        return self.visitAddSub(ctx)
-        if isinstance(ctx, UnaryMinusContext):    return self.visitUnaryMinus(ctx)
-        if isinstance(ctx, IntContext):           return self.visitInt(ctx)
-        if isinstance(ctx, StringContext):        return self.visitString(ctx)
-        if isinstance(ctx, IdContext):            return self.visitId(ctx)
-        if isinstance(ctx, ParensContext):        return self.visitParens(ctx)
-        if isinstance(ctx, IfContext):            return self.visitIf(ctx)
-        if isinstance(ctx, ConditionContext):     return self.visitCondition(ctx)
-        if isinstance(ctx, WhileContext):         return self.visitWhile(ctx)
-        if isinstance(ctx, ForContext):           return self.visitFor(ctx)
-        if isinstance(ctx, ArrayLiteralContext):  return self.visitArrayLiteral(ctx)
-        if isinstance(ctx, ArrayAccessContext):   return self.visitArrayAccess(ctx)
-        if isinstance(ctx, ArrayAssignContext):   return self.visitArrayAssign(ctx)
-        if isinstance(ctx, FuncDefContext):       return self.visitFuncDef(ctx)
-        if isinstance(ctx, FuncCallContext):      return self.visitFuncCall(ctx)
-        if isinstance(ctx, ReturnContext):        return self.visitReturn(ctx)
+        if isinstance(ctx, ProgContext):        return self.visitProg(ctx)
+        if isinstance(ctx, AssignContext):      return self.visitAssign(ctx)
+        if isinstance(ctx, PrintExprContext):   return self.visitPrintExpr(ctx)
+        if isinstance(ctx, PrintContext):       return self.visitPrint(ctx)
+        if isinstance(ctx, MulDivContext):      return self.visitMulDiv(ctx)
+        if isinstance(ctx, PowContext):         return self.visitPow(ctx)
+        if isinstance(ctx, AddSubContext):      return self.visitAddSub(ctx)
+        if isinstance(ctx, UnaryMinusContext):  return self.visitUnaryMinus(ctx)
+        if isinstance(ctx, IntContext):         return self.visitInt(ctx)
+        if isinstance(ctx, FloatContext):       return self.visitFloat(ctx)
+        if isinstance(ctx, StringContext):      return self.visitString(ctx)
+        if isinstance(ctx, IdContext):          return self.visitId(ctx)
+        if isinstance(ctx, ParensContext):      return self.visitParens(ctx)
+        if isinstance(ctx, IfContext):          return self.visitIf(ctx)
+        if isinstance(ctx, ConditionContext):   return self.visitCondition(ctx)
+        if isinstance(ctx, WhileContext):       return self.visitWhile(ctx)
+        if isinstance(ctx, ForContext):         return self.visitFor(ctx)
+        if isinstance(ctx, ArrayLiteralContext):return self.visitArrayLiteral(ctx)
+        if isinstance(ctx, ArrayAccessContext): return self.visitArrayAccess(ctx)
+        if isinstance(ctx, ArrayAssignContext): return self.visitArrayAssign(ctx)
+        if isinstance(ctx, FuncDefContext):     return self.visitFuncDef(ctx)
+        if isinstance(ctx, FuncCallContext):    return self.visitFuncCall(ctx)
+        if isinstance(ctx, ReturnContext):      return self.visitReturn(ctx)
         raise RuntimeError(f"Nodo desconocido: {type(ctx)}")
 
+    # ─── Visitores ───────────────────────────────────────────
     def visitProg(self, ctx):
         for stat in ctx.stats:
             self.visit(stat)
 
     def visitAssign(self, ctx):
-        id_   = ctx.name
         value = self.visit(ctx.expr)
-        self.memory[id_] = value
+        self.memory[ctx.name] = value
         return value
 
     def visitPrintExpr(self, ctx):
@@ -149,7 +245,15 @@ class EvalVisitor:
 
     def visitPrint(self, ctx):
         value = self.visit(ctx.expr)
-        print(value)
+        # Formato limpio para floats: evitar 3.0 cuando es entero exacto
+        if isinstance(value, float) and value == int(value):
+            print(int(value))
+        elif isinstance(value, float):
+            # Mostrar hasta 10 decimales significativos sin ceros finales
+            s = f"{value:.10f}".rstrip('0').rstrip('.')
+            print(s)
+        else:
+            print(value)
         return value
 
     def visitMulDiv(self, ctx):
@@ -159,19 +263,29 @@ class EvalVisitor:
             return left * right
         if right == 0:
             raise ZeroDivisionError("No se puede dividir entre cero")
+        # División real si alguno es float, entera si ambos son int
+        if isinstance(left, float) or isinstance(right, float):
+            return left / right
         return left // right
 
     def visitPow(self, ctx):
         left  = self.visit(ctx.left)
         right = self.visit(ctx.right)
-        if isinstance(right, float) and not right.is_integer():
-            raise RuntimeError("El exponente en x^y debe ser entero")
-        return left ** int(right)
+        return left ** right
 
     def visitAddSub(self, ctx):
         left  = self.visit(ctx.left)
         right = self.visit(ctx.right)
         if ctx.op.type == ADD:
+            # Concatenación automática string + número
+            if isinstance(left, str) or isinstance(right, str):
+                def _fmt(v):
+                    if isinstance(v, float) and v == int(v):
+                        return str(int(v))
+                    if isinstance(v, float):
+                        return f"{v:.10f}".rstrip("0").rstrip(".")
+                    return str(v)
+                return _fmt(left) + _fmt(right)
             return left + right
         return left - right
 
@@ -181,21 +295,22 @@ class EvalVisitor:
     def visitInt(self, ctx):
         return ctx.value
 
+    def visitFloat(self, ctx):      # <-- NUEVO
+        return ctx.value
+
     def visitString(self, ctx):
         return ctx.value
 
     def visitId(self, ctx):
-        id_ = ctx.name
-        if id_ in self.memory:
-            return self.memory[id_]
+        if ctx.name in self.memory:
+            return self.memory[ctx.name]
         return 0
 
     def visitParens(self, ctx):
         return self.visit(ctx.expr)
 
     def visitIf(self, ctx):
-        cond_result = self.visit(ctx.cond)
-        if cond_result:
+        if self.visit(ctx.cond):
             for stat in ctx.then_stats:
                 self.visit(stat)
         else:
@@ -220,7 +335,7 @@ class EvalVisitor:
         return [self.visit(e) for e in ctx.elements]
 
     def visitArrayAccess(self, ctx):
-        arr   = self.memory.get(ctx.name)
+        arr = self.memory.get(ctx.name)
         if not isinstance(arr, list):
             raise RuntimeError(f"'{ctx.name}' no es un arreglo")
         index = self.visit(ctx.index)
@@ -235,12 +350,18 @@ class EvalVisitor:
         if not isinstance(arr, list):
             raise RuntimeError(f"'{ctx.name}' no es un arreglo")
         index = self.visit(ctx.index)
-        if index < 0 or index >= len(arr):
-            raise RuntimeError(
-                f"Índice {index} fuera de rango para '{ctx.name}' (tamaño {len(arr)})"
-            )
+        if index < 0:
+            raise RuntimeError(f"Índice negativo {index} para '{ctx.name}'")
         value = self.visit(ctx.expr)
-        arr[index] = value
+        if index == len(arr):
+            arr.append(value)
+        elif index < len(arr):
+            arr[index] = value
+        else:
+            raise RuntimeError(
+                f"Índice {index} fuera de rango para '{ctx.name}' "
+                f"(tamaño {len(arr)}). Siguiente índice válido: {len(arr)}"
+            )
         return value
 
     def visitFuncDef(self, ctx):
@@ -260,17 +381,15 @@ class EvalVisitor:
             raise RuntimeError(f"Función '{ctx.name}' no definida")
 
         func = self.functions[ctx.name]
-
         if len(ctx.args) != len(func.params):
             raise RuntimeError(
                 f"'{ctx.name}' espera {len(func.params)} argumento(s), "
                 f"recibió {len(ctx.args)}"
             )
 
-        valores = [self.visit(a) for a in ctx.args]
-
+        valores          = [self.visit(a) for a in ctx.args]
         memoria_anterior = self.memory.copy()
-        self.memory = memoria_anterior.copy()
+        self.memory      = memoria_anterior.copy()
         for param, val in zip(func.params, valores):
             self.memory[param] = val
 
@@ -285,19 +404,16 @@ class EvalVisitor:
         return resultado
 
     def visitReturn(self, ctx):
-        value = self.visit(ctx.expr)
-        raise ReturnSignal(value)
+        raise ReturnSignal(self.visit(ctx.expr))
 
     def visitCondition(self, ctx):
         left  = self.visit(ctx.left)
         right = self.visit(ctx.right)
         op    = ctx.op.type
-
         if op == EQ:  return left == right
         if op == NEQ: return left != right
-        if op == LT:  return left <  right
-        if op == GT:  return left >  right
+        if op == LT:  return left < right
+        if op == GT:  return left > right
         if op == LTE: return left <= right
         if op == GTE: return left >= right
-
         raise RuntimeError(f"Operador de comparación desconocido: {op}")
