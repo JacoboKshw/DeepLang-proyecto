@@ -7,6 +7,7 @@ ADD     = 'ADD'
 SUB     = 'SUB'
 ID      = 'ID'
 INT     = 'INT'
+FLOAT   = 'FLOAT'      # <-- NUEVO: literales decimales como 3.14
 STRING  = 'STRING'
 NEWLINE = 'NEWLINE'
 LPAREN  = 'LPAREN'
@@ -14,18 +15,19 @@ RPAREN  = 'RPAREN'
 EOF     = 'EOF'
 
 # Tokens para estructuras de control.
-IF       = 'IF'
-ELSE     = 'ELSE'
-END      = 'END'
-WHILE    = 'WHILE'
-FOR      = 'FOR'
-TO       = 'TO'
-EQ       = 'EQ'       # ==
-NEQ      = 'NEQ'      # !=
-LT       = 'LT'       # <
-GT       = 'GT'       # >
-LTE      = 'LTE'      # <=
-GTE      = 'GTE'      # >=
+IF    = 'IF'
+ELSE  = 'ELSE'
+END   = 'END'
+WHILE = 'WHILE'
+FOR   = 'FOR'
+TO    = 'TO'
+
+EQ  = 'EQ'   # ==
+NEQ = 'NEQ'  # !=
+LT  = 'LT'   # <
+GT  = 'GT'   # >
+LTE = 'LTE'  # <=
+GTE = 'GTE'  # >=
 
 # Tokens para arreglos.
 LBRACKET = 'LBRACKET'  # [
@@ -34,12 +36,14 @@ COMMA    = 'COMMA'     # ,
 POW      = 'POW'       # ^
 
 # Tokens de entrada/salida.
-PRINT    = 'PRINT'
+PRINT = 'PRINT'
 
 # Tokens para funciones.
-FUN      = 'FUN'
-RETURN   = 'RETURN'
+FUN    = 'FUN'
+RETURN = 'RETURN'
 
+# Token para operador punto (acceso a campo — reservado para futuro uso)
+DOT = 'DOT'  # .  usado solo en floats internamente
 
 class Token:
     def __init__(self, type_, text, line):
@@ -70,7 +74,6 @@ KEYWORDS = {
 
 
 class DeepLangLexer:
-
     def __init__(self, input_stream):
         self.src  = input_stream
         self.pos  = 0
@@ -97,6 +100,12 @@ class DeepLangLexer:
                 self.advance()
                 continue
 
+            # Comentarios de línea con #
+            if ch == '#':
+                while self.current() is not None and self.current() != '\n':
+                    self.advance()
+                continue
+
             # Normalizamos saltos de línea como NEWLINE.
             if ch in ('\r', '\n'):
                 while self.current() in ('\r', '\n'):
@@ -104,13 +113,20 @@ class DeepLangLexer:
                 tokens.append(Token(NEWLINE, '\n', self.line))
                 continue
 
-            # Enteros.
+            # Números: enteros y flotantes.
             if ch.isdigit():
                 start = self.pos
                 line  = self.line
                 while self.current() and self.current().isdigit():
                     self.advance()
-                tokens.append(Token(INT, self.src[start:self.pos], line))
+                # ¿Tiene parte decimal?
+                if self.current() == '.' and self.pos + 1 < len(self.src) and self.src[self.pos + 1].isdigit():
+                    self.advance()  # consume el '.'
+                    while self.current() and self.current().isdigit():
+                        self.advance()
+                    tokens.append(Token(FLOAT, self.src[start:self.pos], line))
+                else:
+                    tokens.append(Token(INT, self.src[start:self.pos], line))
                 continue
 
             # Cadenas entre comillas dobles.
@@ -136,26 +152,23 @@ class DeepLangLexer:
                 continue
 
             # Identificadores o palabras reservadas.
-            if ch.isalpha():
+            # Permitimos letras, dígitos y guión bajo (excepto al inicio solo letras/_)
+            if ch.isalpha() or ch == '_':
                 start = self.pos
                 line  = self.line
-                while self.current() and self.current().isalpha():
+                while self.current() and (self.current().isalpha() or self.current().isdigit() or self.current() == '_'):
                     self.advance()
-                word = self.src[start:self.pos]
+                word     = self.src[start:self.pos]
                 tok_type = KEYWORDS.get(word, ID)
                 tokens.append(Token(tok_type, word, line))
                 continue
 
             # Revisamos primero operadores de dos caracteres.
-            two = self.src[self.pos:self.pos+2]
-            if two == '==':
-                tokens.append(Token(EQ,  '==', self.line)); self.pos += 2; continue
-            if two == '!=':
-                tokens.append(Token(NEQ, '!=', self.line)); self.pos += 2; continue
-            if two == '<=':
-                tokens.append(Token(LTE, '<=', self.line)); self.pos += 2; continue
-            if two == '>=':
-                tokens.append(Token(GTE, '>=', self.line)); self.pos += 2; continue
+            two = self.src[self.pos:self.pos + 2]
+            if two == '==': tokens.append(Token(EQ,  '==', self.line)); self.pos += 2; continue
+            if two == '!=': tokens.append(Token(NEQ, '!=', self.line)); self.pos += 2; continue
+            if two == '<=': tokens.append(Token(LTE, '<=', self.line)); self.pos += 2; continue
+            if two == '>=': tokens.append(Token(GTE, '>=', self.line)); self.pos += 2; continue
 
             simple = {
                 '*': MUL,
