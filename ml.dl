@@ -1,0 +1,931 @@
+# ml.dl
+# Librería de Machine Learning para DeepLang
+# 100% implementada en el lenguaje, sin dependencias externas.
+#
+# Contenido:
+#   1. Regresión lineal (gradiente descendente + ecuación normal)
+#   2. Regresión logística
+#   3. Perceptrón simple
+#   4. Perceptrón multicapa (MLP) con backpropagation
+#   5. K-Means clustering
+#   6. Normalización de datos
+#   7. Métricas de evaluación
+
+print("ml.dl cargado correctamente.")
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 1 — UTILITARIOS MATEMÁTICOS
+# ═════════════════════════════════════════════════════════════
+
+fun _ml_abs(x)
+  if x < 0
+    return x * -1.0
+  end
+  return x
+end
+
+fun _ml_max(a, b)
+  if a > b
+    return a
+  end
+  return b
+end
+
+fun _ml_min(a, b)
+  if a < b
+    return a
+  end
+  return b
+end
+
+# Función sigmoide: 1 / (1 + e^-x)
+fun sigmoide(x)
+  if x > 500.0
+    return 1.0
+  end
+  if x < -500.0
+    return 0.0
+  end
+  return 1.0 / (1.0 + exp(x * -1.0))
+end
+
+# Derivada de la sigmoide: s*(1-s)
+fun sigmoide_deriv(s)
+  return s * (1.0 - s)
+end
+
+# ReLU
+fun relu(x)
+  if x > 0.0
+    return x
+  end
+  return 0.0
+end
+
+# Derivada de ReLU
+fun relu_deriv(x)
+  if x > 0.0
+    return 1.0
+  end
+  return 0.0
+end
+
+# Tanh aproximada con exp
+fun tanh_dl(x)
+  ep = exp(x)
+  en = exp(x * -1.0)
+  return (ep - en) / (ep + en)
+end
+
+fun tanh_deriv(t)
+  return 1.0 - t * t
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 2 — NORMALIZACIÓN
+# ═════════════════════════════════════════════════════════════
+
+# Retorna media de un arreglo de n elementos
+fun media(datos, n)
+  suma = 0.0
+  i = 0
+  while i < n
+    suma = suma + datos[i]
+    i = i + 1
+  end
+  return suma / n
+end
+
+# Retorna desviación estándar
+fun desviacion(datos, n)
+  m    = media(datos, n)
+  suma = 0.0
+  i = 0
+  while i < n
+    d    = datos[i] - m
+    suma = suma + d * d
+    i = i + 1
+  end
+  return raiz(suma / n)
+end
+
+# Normalización min-max: escala datos al rango [0, 1]
+# Retorna arreglo normalizado
+fun normalizar_minmax(datos, n)
+  mn  = datos[0]
+  mx  = datos[0]
+  i = 1
+  while i < n
+    if datos[i] < mn
+      mn = datos[i]
+    end
+    if datos[i] > mx
+      mx = datos[i]
+    end
+    i = i + 1
+  end
+  rng  = mx - mn
+  norm = []
+  i = 0
+  while i < n
+    if rng < 1e-10
+      norm[longitud(norm)] = 0.0
+    end
+    if rng >= 1e-10
+      norm[longitud(norm)] = (datos[i] - mn) / rng
+    end
+    i = i + 1
+  end
+  return norm
+end
+
+# Normalización Z-score: (x - media) / std
+fun normalizar_zscore(datos, n)
+  m   = media(datos, n)
+  std = desviacion(datos, n)
+  norm = []
+  i = 0
+  while i < n
+    if std < 1e-10
+      norm[longitud(norm)] = 0.0
+    end
+    if std >= 1e-10
+      norm[longitud(norm)] = (datos[i] - m) / std
+    end
+    i = i + 1
+  end
+  return norm
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 3 — MÉTRICAS
+# ═════════════════════════════════════════════════════════════
+
+# Error cuadrático medio (MSE)
+fun mse(y_real, y_pred, n)
+  suma = 0.0
+  i = 0
+  while i < n
+    d    = y_real[i] - y_pred[i]
+    suma = suma + d * d
+    i = i + 1
+  end
+  return suma / n
+end
+
+# Error absoluto medio (MAE)
+fun mae(y_real, y_pred, n)
+  suma = 0.0
+  i = 0
+  while i < n
+    suma = suma + _ml_abs(y_real[i] - y_pred[i])
+    i = i + 1
+  end
+  return suma / n
+end
+
+# R² (coeficiente de determinación)
+fun r_cuadrado(y_real, y_pred, n)
+  m     = media(y_real, n)
+  ss_res = 0.0
+  ss_tot = 0.0
+  i = 0
+  while i < n
+    d1    = y_real[i] - y_pred[i]
+    d2    = y_real[i] - m
+    ss_res = ss_res + d1 * d1
+    ss_tot = ss_tot + d2 * d2
+    i = i + 1
+  end
+  if ss_tot < 1e-10
+    return 1.0
+  end
+  return 1.0 - ss_res / ss_tot
+end
+
+# Exactitud (accuracy) para clasificación binaria
+fun accuracy(y_real, y_pred, n)
+  correctos = 0.0
+  i = 0
+  while i < n
+    pred = 0
+    if y_pred[i] >= 0.5
+      pred = 1
+    end
+    if pred == y_real[i]
+      correctos = correctos + 1.0
+    end
+    i = i + 1
+  end
+  return correctos / n
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 4 — REGRESIÓN LINEAL
+# ═════════════════════════════════════════════════════════════
+#
+# Modelo: y = w*x + b  (una característica)
+# Entrenamiento por gradiente descendente.
+#
+# Parámetros:
+#   X, Y   : arreglos de n ejemplos
+#   n      : número de ejemplos
+#   lr     : tasa de aprendizaje (ej: 0.01)
+#   epochs : iteraciones de entrenamiento
+#
+# Retorna arreglo [w, b]
+
+fun regresion_lineal(X, Y, n, lr, epochs)
+  w = 0.0
+  b = 0.0
+  ep = 0
+  while ep < epochs
+    grad_w = 0.0
+    grad_b = 0.0
+    i = 0
+    while i < n
+      pred   = w * X[i] + b
+      error  = pred - Y[i]
+      grad_w = grad_w + error * X[i]
+      grad_b = grad_b + error
+      i = i + 1
+    end
+    grad_w = grad_w / n
+    grad_b = grad_b / n
+    w = w - lr * grad_w
+    b = b - lr * grad_b
+    ep = ep + 1
+  end
+  resultado = []
+  resultado[0] = w
+  resultado[1] = b
+  return resultado
+end
+
+# Predicción con regresión lineal
+fun rl_predecir(params, X, n)
+  w = params[0]
+  b = params[1]
+  preds = []
+  i = 0
+  while i < n
+    preds[longitud(preds)] = w * X[i] + b
+    i = i + 1
+  end
+  return preds
+end
+
+# ─────────────────────────────────────────────────────────────
+# Regresión lineal múltiple (varias características)
+# X_plano: matriz n x m (filas=ejemplos, cols=features), m: num features
+# Y: arreglo n
+# Retorna arreglo W de m+1 pesos (W[0]=bias, W[1..m]=pesos)
+# ─────────────────────────────────────────────────────────────
+fun regresion_lineal_multi(X_plano, Y, n, m, lr, epochs)
+  # W[0] = bias, W[1..m] = pesos
+  W = []
+  j = 0
+  while j <= m
+    W[longitud(W)] = 0.0
+    j = j + 1
+  end
+
+  ep = 0
+  while ep < epochs
+    grads = []
+    j = 0
+    while j <= m
+      grads[longitud(grads)] = 0.0
+      j = j + 1
+    end
+    i = 0
+    while i < n
+      pred = W[0]
+      j = 0
+      while j < m
+        pred = pred + W[j + 1] * X_plano[i * m + j]
+        j = j + 1
+      end
+      err = pred - Y[i]
+      grads[0] = grads[0] + err
+      j = 0
+      while j < m
+        grads[j + 1] = grads[j + 1] + err * X_plano[i * m + j]
+        j = j + 1
+      end
+      i = i + 1
+    end
+    j = 0
+    while j <= m
+      W[j] = W[j] - lr * grads[j] / n
+      j = j + 1
+    end
+    ep = ep + 1
+  end
+  return W
+end
+
+fun rl_multi_predecir(W, X_plano, n, m)
+  preds = []
+  i = 0
+  while i < n
+    pred = W[0]
+    j = 0
+    while j < m
+      pred = pred + W[j + 1] * X_plano[i * m + j]
+      j = j + 1
+    end
+    preds[longitud(preds)] = pred
+    i = i + 1
+  end
+  return preds
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 5 — REGRESIÓN LOGÍSTICA
+# ═════════════════════════════════════════════════════════════
+#
+# Modelo: P(y=1|x) = sigmoide(w*x + b)
+# Clasificación binaria (y ∈ {0, 1})
+# Usa binary cross-entropy como pérdida.
+
+fun regresion_logistica(X, Y, n, lr, epochs)
+  w = 0.0
+  b = 0.0
+  ep = 0
+  while ep < epochs
+    grad_w = 0.0
+    grad_b = 0.0
+    i = 0
+    while i < n
+      pred   = sigmoide(w * X[i] + b)
+      error  = pred - Y[i]
+      grad_w = grad_w + error * X[i]
+      grad_b = grad_b + error
+      i = i + 1
+    end
+    w = w - lr * grad_w / n
+    b = b - lr * grad_b / n
+    ep = ep + 1
+  end
+  resultado = []
+  resultado[0] = w
+  resultado[1] = b
+  return resultado
+end
+
+fun log_predecir(params, X, n)
+  w = params[0]
+  b = params[1]
+  preds = []
+  i = 0
+  while i < n
+    preds[longitud(preds)] = sigmoide(w * X[i] + b)
+    i = i + 1
+  end
+  return preds
+end
+
+# Regresión logística múltiple
+fun regresion_logistica_multi(X_plano, Y, n, m, lr, epochs)
+  W = []
+  j = 0
+  while j <= m
+    W[longitud(W)] = 0.0
+    j = j + 1
+  end
+  ep = 0
+  while ep < epochs
+    grads = []
+    j = 0
+    while j <= m
+      grads[longitud(grads)] = 0.0
+      j = j + 1
+    end
+    i = 0
+    while i < n
+      z = W[0]
+      j = 0
+      while j < m
+        z = z + W[j + 1] * X_plano[i * m + j]
+        j = j + 1
+      end
+      pred = sigmoide(z)
+      err  = pred - Y[i]
+      grads[0] = grads[0] + err
+      j = 0
+      while j < m
+        grads[j + 1] = grads[j + 1] + err * X_plano[i * m + j]
+        j = j + 1
+      end
+      i = i + 1
+    end
+    j = 0
+    while j <= m
+      W[j] = W[j] - lr * grads[j] / n
+      j = j + 1
+    end
+    ep = ep + 1
+  end
+  return W
+end
+
+fun log_multi_predecir(W, X_plano, n, m)
+  preds = []
+  i = 0
+  while i < n
+    z = W[0]
+    j = 0
+    while j < m
+      z = z + W[j + 1] * X_plano[i * m + j]
+      j = j + 1
+    end
+    preds[longitud(preds)] = sigmoide(z)
+    i = i + 1
+  end
+  return preds
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 6 — PERCEPTRÓN SIMPLE
+# ═════════════════════════════════════════════════════════════
+#
+# Clasificador lineal con función de activación escalón.
+# Actualización: w = w + lr*(y-pred)*x
+#
+# X_plano: n x m, Y: {0,1} o {-1,1}
+# Retorna W (m+1 pesos incluyendo bias en W[0])
+
+fun perceptron(X_plano, Y, n, m, lr, epochs)
+  W = []
+  j = 0
+  while j <= m
+    W[longitud(W)] = 0.0
+    j = j + 1
+  end
+
+  ep = 0
+  while ep < epochs
+    i = 0
+    while i < n
+      z = W[0]
+      j = 0
+      while j < m
+        z = z + W[j + 1] * X_plano[i * m + j]
+        j = j + 1
+      end
+      pred = 0
+      if z >= 0.0
+        pred = 1
+      end
+      err  = Y[i] - pred
+      W[0] = W[0] + lr * err
+      j = 0
+      while j < m
+        W[j + 1] = W[j + 1] + lr * err * X_plano[i * m + j]
+        j = j + 1
+      end
+      i = i + 1
+    end
+    ep = ep + 1
+  end
+  return W
+end
+
+fun perceptron_predecir(W, X_plano, n, m)
+  preds = []
+  i = 0
+  while i < n
+    z = W[0]
+    j = 0
+    while j < m
+      z = z + W[j + 1] * X_plano[i * m + j]
+      j = j + 1
+    end
+    pred = 0
+    if z >= 0.0
+      pred = 1
+    end
+    preds[longitud(preds)] = pred
+    i = i + 1
+  end
+  return preds
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 7 — PERCEPTRÓN MULTICAPA (MLP)
+# ═════════════════════════════════════════════════════════════
+#
+# Arquitectura fija de 3 capas: entrada -> oculta -> salida
+# Activación: sigmoide en todas las capas
+#
+# Parámetros de la red (arreglos planos):
+#   W1: pesos capa oculta  [n_in x n_hidden]
+#   b1: biases capa oculta [n_hidden]
+#   W2: pesos capa salida  [n_hidden x n_out]
+#   b2: biases capa salida [n_out]
+#
+# Para inicializar, llama: mlp_init(n_in, n_hidden, n_out)
+# que retorna un arreglo de 4 sub-arreglos [W1, b1, W2, b2]
+# (los empaquetamos en un arreglo plano con separadores de tamaño)
+
+# ─── Inicialización aleatoria (pseudoaleatoria con semilla) ──
+# Usamos un generador LCG (Linear Congruential Generator)
+_lcg_estado = 42
+
+fun _rand_next()
+  _lcg_estado = modulo(_lcg_estado * 1664525 + 1013904223, 2147483647)
+  return _lcg_estado
+end
+
+fun _rand_float()
+  # Retorna un float en (-1, 1)
+  v = _rand_next()
+  return modulo(v, 10000) / 10000.0 * 2.0 - 1.0
+end
+
+fun mlp_semilla(s)
+  _lcg_estado = s
+  return 0
+end
+
+# mlp_init: inicializa pesos con valores pequeños aleatorios
+# Retorna arreglo plano con layout:
+# [n_in, n_hidden, n_out, W1_0..W1_{n_in*n_hidden-1}, b1_0..b1_{n_hidden-1},
+#  W2_0..W2_{n_hidden*n_out-1}, b2_0..b2_{n_out-1}]
+fun mlp_init(n_in, n_hidden, n_out)
+  red = []
+  # Guardar dimensiones
+  red[longitud(red)] = n_in
+  red[longitud(red)] = n_hidden
+  red[longitud(red)] = n_out
+  # W1: n_in x n_hidden
+  k = 0
+  while k < n_in * n_hidden
+    red[longitud(red)] = _rand_float() * 0.5
+    k = k + 1
+  end
+  # b1: n_hidden
+  k = 0
+  while k < n_hidden
+    red[longitud(red)] = 0.0
+    k = k + 1
+  end
+  # W2: n_hidden x n_out
+  k = 0
+  while k < n_hidden * n_out
+    red[longitud(red)] = _rand_float() * 0.5
+    k = k + 1
+  end
+  # b2: n_out
+  k = 0
+  while k < n_out
+    red[longitud(red)] = 0.0
+    k = k + 1
+  end
+  return red
+end
+
+# Helpers para extraer dimensiones y pesos
+fun mlp_n_in(red)
+  return red[0]
+end
+fun mlp_n_hidden(red)
+  return red[1]
+end
+fun mlp_n_out(red)
+  return red[2]
+end
+
+# Offset de W1 dentro del arreglo red
+fun _mlp_off_W1()
+  return 3
+end
+fun _mlp_off_b1(n_in, n_hidden)
+  return 3 + n_in * n_hidden
+end
+fun _mlp_off_W2(n_in, n_hidden)
+  return 3 + n_in * n_hidden + n_hidden
+end
+fun _mlp_off_b2(n_in, n_hidden, n_out)
+  return 3 + n_in * n_hidden + n_hidden + n_hidden * n_out
+end
+
+# ─── Forward pass ────────────────────────────────────────────
+# Retorna arreglo [h_0..h_{n_hidden-1}, o_0..o_{n_out-1}]
+fun mlp_forward(red, x, n_in)
+  n_hidden = red[1]
+  n_out    = red[2]
+  off_W1   = 3
+  off_b1   = 3 + n_in * n_hidden
+  off_W2   = off_b1 + n_hidden
+  off_b2   = off_W2 + n_hidden * n_out
+
+  # Capa oculta
+  h = []
+  j = 0
+  while j < n_hidden
+    z = red[off_b1 + j]
+    i = 0
+    while i < n_in
+      z = z + red[off_W1 + i * n_hidden + j] * x[i]
+      i = i + 1
+    end
+    h[longitud(h)] = sigmoide(z)
+    j = j + 1
+  end
+
+  # Capa salida
+  o = []
+  j = 0
+  while j < n_out
+    z = red[off_b2 + j]
+    i = 0
+    while i < n_hidden
+      z = z + red[off_W2 + i * n_out + j] * h[i]
+      i = i + 1
+    end
+    o[longitud(o)] = sigmoide(z)
+    j = j + 1
+  end
+
+  # Devolver h concatenado con o
+  salida = []
+  j = 0
+  while j < n_hidden
+    salida[longitud(salida)] = h[j]
+    j = j + 1
+  end
+  j = 0
+  while j < n_out
+    salida[longitud(salida)] = o[j]
+    j = j + 1
+  end
+  return salida
+end
+
+# ─── Entrenamiento (backpropagation) ─────────────────────────
+# X_plano: n x n_in  |  Y_plano: n x n_out
+# lr: tasa de aprendizaje   epochs: iteraciones
+# Retorna la red actualizada
+fun mlp_entrenar(red, X_plano, Y_plano, n, lr, epochs)
+  n_in     = red[0]
+  n_hidden = red[1]
+  n_out    = red[2]
+  off_W1   = 3
+  off_b1   = 3 + n_in * n_hidden
+  off_W2   = off_b1 + n_hidden
+  off_b2   = off_W2 + n_hidden * n_out
+
+  ep = 0
+  while ep < epochs
+    i = 0
+    while i < n
+      # Extraer ejemplo i
+      x = []
+      j = 0
+      while j < n_in
+        x[longitud(x)] = X_plano[i * n_in + j]
+        j = j + 1
+      end
+      y = []
+      j = 0
+      while j < n_out
+        y[longitud(y)] = Y_plano[i * n_out + j]
+        j = j + 1
+      end
+
+      # Forward
+      act    = mlp_forward(red, x, n_in)
+      # act[0..n_hidden-1] = activaciones oculta
+      # act[n_hidden..n_hidden+n_out-1] = salida
+
+      # Delta capa salida: (o - y) * s'(o)
+      delta_o = []
+      j = 0
+      while j < n_out
+        o_j     = act[n_hidden + j]
+        delta_o[longitud(delta_o)] = (o_j - y[j]) * sigmoide_deriv(o_j)
+        j = j + 1
+      end
+
+      # Delta capa oculta: sum_k(delta_o_k * W2_jk) * s'(h_j)
+      delta_h = []
+      j = 0
+      while j < n_hidden
+        suma = 0.0
+        k = 0
+        while k < n_out
+          suma = suma + delta_o[k] * red[off_W2 + j * n_out + k]
+          k = k + 1
+        end
+        h_j = act[j]
+        delta_h[longitud(delta_h)] = suma * sigmoide_deriv(h_j)
+        j = j + 1
+      end
+
+      # Actualizar W2 y b2
+      j = 0
+      while j < n_hidden
+        k = 0
+        while k < n_out
+          red[off_W2 + j * n_out + k] = red[off_W2 + j * n_out + k] - lr * delta_o[k] * act[j]
+          k = k + 1
+        end
+        j = j + 1
+      end
+      k = 0
+      while k < n_out
+        red[off_b2 + k] = red[off_b2 + k] - lr * delta_o[k]
+        k = k + 1
+      end
+
+      # Actualizar W1 y b1
+      j = 0
+      while j < n_hidden
+        ii = 0
+        while ii < n_in
+          red[off_W1 + ii * n_hidden + j] = red[off_W1 + ii * n_hidden + j] - lr * delta_h[j] * x[ii]
+          ii = ii + 1
+        end
+        red[off_b1 + j] = red[off_b1 + j] - lr * delta_h[j]
+        j = j + 1
+      end
+
+      i = i + 1
+    end
+    ep = ep + 1
+  end
+  return red
+end
+
+# ─── Predicción MLP ──────────────────────────────────────────
+fun mlp_predecir(red, X_plano, n)
+  n_in     = red[0]
+  n_hidden = red[1]
+  n_out    = red[2]
+  preds    = []
+  i = 0
+  while i < n
+    x = []
+    j = 0
+    while j < n_in
+      x[longitud(x)] = X_plano[i * n_in + j]
+      j = j + 1
+    end
+    act = mlp_forward(red, x, n_in)
+    j = 0
+    while j < n_out
+      preds[longitud(preds)] = act[n_hidden + j]
+      j = j + 1
+    end
+    i = i + 1
+  end
+  return preds
+end
+
+# ═════════════════════════════════════════════════════════════
+# SECCIÓN 8 — K-MEANS CLUSTERING
+# ═════════════════════════════════════════════════════════════
+#
+# Agrupa n puntos de m dimensiones en k clusters.
+# X_plano: n x m
+# Retorna arreglo de n etiquetas (0..k-1)
+
+fun _distancia_euclid(X_plano, i, centroides, c, m)
+  suma = 0.0
+  j = 0
+  while j < m
+    d    = X_plano[i * m + j] - centroides[c * m + j]
+    suma = suma + d * d
+    j = j + 1
+  end
+  return suma
+end
+
+fun kmeans(X_plano, n, m, k, max_iter)
+  # Inicializar centroides con los primeros k puntos
+  centroides = []
+  c = 0
+  while c < k
+    j = 0
+    while j < m
+      centroides[longitud(centroides)] = X_plano[c * m + j]
+      j = j + 1
+    end
+    c = c + 1
+  end
+
+  etiquetas = []
+  i = 0
+  while i < n
+    etiquetas[longitud(etiquetas)] = 0
+    i = i + 1
+  end
+
+  iter = 0
+  while iter < max_iter
+    # Paso E: asignar cada punto al centroide más cercano
+    cambios = 0
+    i = 0
+    while i < n
+      mejor_c   = 0
+      mejor_d   = _distancia_euclid(X_plano, i, centroides, 0, m)
+      c = 1
+      while c < k
+        d = _distancia_euclid(X_plano, i, centroides, c, m)
+        if d < mejor_d
+          mejor_d = d
+          mejor_c = c
+        end
+        c = c + 1
+      end
+      if etiquetas[i] != mejor_c
+        cambios = cambios + 1
+      end
+      etiquetas[i] = mejor_c
+      i = i + 1
+    end
+
+    # Paso M: recalcular centroides
+    # Primero acumular suma y conteo
+    sumas   = []
+    conteos = []
+    c = 0
+    while c < k * m
+      sumas[longitud(sumas)] = 0.0
+      c = c + 1
+    end
+    c = 0
+    while c < k
+      conteos[longitud(conteos)] = 0
+      c = c + 1
+    end
+
+    i = 0
+    while i < n
+      c = etiquetas[i]
+      j = 0
+      while j < m
+        sumas[c * m + j] = sumas[c * m + j] + X_plano[i * m + j]
+        j = j + 1
+      end
+      conteos[c] = conteos[c] + 1
+      i = i + 1
+    end
+
+    c = 0
+    while c < k
+      if conteos[c] > 0
+        j = 0
+        while j < m
+          centroides[c * m + j] = sumas[c * m + j] / conteos[c]
+          j = j + 1
+        end
+      end
+      c = c + 1
+    end
+
+    # Si no hubo cambios, convergió
+    if cambios == 0
+      iter = max_iter
+    end
+    iter = iter + 1
+  end
+  return etiquetas
+end
+
+# Mostrar resumen de clusters
+fun kmeans_resumen(etiquetas, n, k)
+  print("--- Resumen K-Means ---")
+  c = 0
+  while c < k
+    count = 0
+    i = 0
+    while i < n
+      if etiquetas[i] == c
+        count = count + 1
+      end
+      i = i + 1
+    end
+    print("Cluster " + c + ": " + count + " puntos")
+    c = c + 1
+  end
+  return 0
+end
+
+# ═════════════════════════════════════════════════════════════
+# Listado de funciones disponibles
+# ═════════════════════════════════════════════════════════════
+print("Funciones de ml.dl:")
+print("  Utilidades: sigmoide(x)  relu(x)  tanh_dl(x)  media(d,n)  desviacion(d,n)")
+print("  Normaliz.:  normalizar_minmax(d,n)  normalizar_zscore(d,n)")
+print("  Metricas:   mse(yr,yp,n)  mae(yr,yp,n)  r_cuadrado(yr,yp,n)  accuracy(yr,yp,n)")
+print("  Reg.lineal: regresion_lineal(X,Y,n,lr,ep)  rl_predecir(params,X,n)")
+print("              regresion_lineal_multi(X,Y,n,m,lr,ep)  rl_multi_predecir(W,X,n,m)")
+print("  Reg.logist: regresion_logistica(X,Y,n,lr,ep)  log_predecir(params,X,n)")
+print("              regresion_logistica_multi(X,Y,n,m,lr,ep)")
+print("  Perceptron: perceptron(X,Y,n,m,lr,ep)  perceptron_predecir(W,X,n,m)")
+print("  MLP:        mlp_init(n_in,n_hid,n_out)  mlp_entrenar(red,X,Y,n,lr,ep)")
+print("              mlp_predecir(red,X,n)  mlp_semilla(s)")
+print("  K-Means:    kmeans(X,n,m,k,max_iter)  kmeans_resumen(etiq,n,k)")
