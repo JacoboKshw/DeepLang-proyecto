@@ -1,4 +1,4 @@
-# EvalVisitor.py
+#EvalVIsitor.py
 from lexer import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
@@ -11,6 +11,7 @@ from parser import (
 from deeplang_filelib     import DeepLangFileLib
 from deeplang_graficaslib  import DeepLangGraficasLib
 from deeplang_matriceslib  import DeepLangMatricesLib
+from deeplang_mllib        import DeepLangMLLib
 
 
 class ReturnSignal(Exception):
@@ -29,6 +30,8 @@ class EvalVisitor:
         filelib    = DeepLangFileLib()
         graficaslib  = DeepLangGraficasLib()
         matriceslib  = DeepLangMatricesLib()
+        mllib      = DeepLangMLLib()  # <-- NUEVA LIBRERÍA
+        
         self.builtins = {
             # ── Trigonométricas ───────────────────────────────
             'sen':        (self._sin,  1),
@@ -90,9 +93,59 @@ class EvalVisitor:
             'vec_dot':         (matriceslib.vec_dot,         3),
             'vec_norma':       (matriceslib.vec_norma,       2),
             # ── Arreglos ──────────────────────────────────────
-
             'longitud':   (self._len, 1),
             'len':        (self._len, 1),
+            
+            # ── MACHINE LEARNING ──────────────────────────────
+            # Activaciones y utilidades
+            'sig':            (mllib.sig,          1),
+            'sig_deriv':      (mllib.sig_deriv,    1),
+            'relu':           (mllib.relu,         1),
+            'relu_deriv':     (mllib.relu_deriv,   1),
+            'tanh_dl':        (mllib.tanh_dl,      1),
+            'tanh_deriv':     (mllib.tanh_deriv,   1),
+            
+            # Normalización
+            'media':                (mllib.media,                2),
+            'desviacion':           (mllib.desviacion,           2),
+            'normalizar_minmax':    (mllib.normalizar_minmax,    2),
+            'normalizar_zscore':    (mllib.normalizar_zscore,    2),
+            
+            # Métricas
+            'mse':        (mllib.mse,        3),
+            'mae':        (mllib.mae,        3),
+            'r_cuadrado': (mllib.r_cuadrado, 3),
+            'accuracy':   (mllib.accuracy,   3),
+            
+            # Regresión lineal
+            'regresion_lineal':       (mllib.regresion_lineal,       5),
+            'rl_predecir':            (mllib.rl_predecir,            3),
+            'regresion_lineal_multi': (mllib.regresion_lineal_multi, 6),
+            'rl_multi_predecir':      (mllib.rl_multi_predecir,      4),
+            
+            # Regresión logística
+            'regresion_logistica':       (mllib.regresion_logistica,       5),
+            'log_predecir':              (mllib.log_predecir,              3),
+            'regresion_logistica_multi': (mllib.regresion_logistica_multi, 6),
+            'log_multi_predecir':        (mllib.log_multi_predecir,        4),
+            
+            # Perceptrón
+            'perceptron':          (mllib.perceptron,          6),
+            'perceptron_predecir': (mllib.perceptron_predecir, 4),
+            
+            # MLP (Perceptrón Multicapa)
+            'mlp_init':      (mllib.mlp_init,      3),
+            'mlp_n_in':      (mllib.mlp_n_in,      1),
+            'mlp_n_hidden':  (mllib.mlp_n_hidden,  1),
+            'mlp_n_out':     (mllib.mlp_n_out,     1),
+            'mlp_forward':   (mllib.mlp_forward,   3),
+            'mlp_entrenar':  (mllib.mlp_entrenar,  6),
+            'mlp_predecir':  (mllib.mlp_predecir,  3),
+            'ml_semilla':    (mllib.ml_semilla,    1),
+            
+            # K-Means
+            'kmeans':         (mllib.kmeans,         5),
+            'kmeans_resumen': (mllib.kmeans_resumen, 3),
         }
 
     # ─── Normalización de ángulos ────────────────────────────
