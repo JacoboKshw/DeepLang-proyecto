@@ -8,7 +8,9 @@ from parser import (
     ArrayLiteralContext, ArrayAccessContext, ArrayAssignContext,
     FuncDefContext, FuncCallContext, ReturnContext,
 )
-from deeplang_filelib import DeepLangFileLib
+from deeplang_filelib     import DeepLangFileLib
+from deeplang_graficaslib  import DeepLangGraficasLib
+from deeplang_matriceslib  import DeepLangMatricesLib
 
 
 class ReturnSignal(Exception):
@@ -24,9 +26,11 @@ class EvalVisitor:
     def __init__(self):
         self.memory    = {}
         self.functions = {}
-        filelib = DeepLangFileLib()
+        filelib    = DeepLangFileLib()
+        graficaslib  = DeepLangGraficasLib()
+        matriceslib  = DeepLangMatricesLib()
         self.builtins = {
-            # Trigonométricas
+            # ── Trigonométricas ───────────────────────────────
             'sen':        (self._sin,  1),
             'sin':        (self._sin,  1),
             'cos':        (self._cos,  1),
@@ -38,30 +42,60 @@ class EvalVisitor:
             'cotangente': (self._cot,  1),
             'cot':        (self._cot,  1),
             'ctg':        (self._cot,  1),
-            # Matemáticas generales
+            # ── Matemáticas generales ─────────────────────────
             'modulo':     (self._mod,   2),
             'mod':        (self._mod,   2),
             'raiz':       (self._sqrt,  1),
             'abs':        (self._abs,   1),
-            'redondear':  (self._round, 2),   # redondear(x, decimales)
+            'redondear':  (self._round, 2),
             'piso':       (self._floor, 1),
             'techo':      (self._ceil,  1),
-            'entero':     (self._int,   1),   # truncar a entero
-            'flotante':   (self._float, 1),   # convertir a float
-            'log':        (self._log,   1),   # log natural
+            'entero':     (self._int,   1),
+            'flotante':   (self._float, 1),
+            'log':        (self._log,   1),
             'log10':      (self._log10, 1),
-            'exp':        (self._exp,   1),   # e^x
-            # Archivos
-            'leerarchivo':   (filelib.leerarchivo,   1),
-            'leerlineas':    (filelib.leerlineas,    1),
-            'escribirarchivo': (filelib.escribirarchivo, 2),  # path, texto
-            'agregararchivo':  (filelib.agregararchivo,  2),  # path, texto
-            # Utilidades de arreglos
-            'longitud':   (self._len,   1),
-            'len':        (self._len,   1),
+            'exp':        (self._exp,   1),
+            # ── Archivos de texto ─────────────────────────────
+            'leerarchivo':     (filelib.leerarchivo,     1),
+            'leerlineas':      (filelib.leerlineas,      1),
+            'escribirarchivo': (filelib.escribirarchivo, 2),
+            'agregararchivo':  (filelib.agregararchivo,  2),
+            # ── CSV ───────────────────────────────────────────
+            'leercsv':         (filelib.leercsv,         1),
+            'leercsv_datos':   (filelib.leercsv_datos,   1),
+            'leercsv_columna': (filelib.leercsv_columna, 2),
+            'escribircsv':     (filelib.escribircsv,     2),
+            # ── Gráficas ASCII ────────────────────────────────
+            'grafica_barras':     (graficaslib.grafica_barras,     3),
+            'grafica_barras_v':   (graficaslib.grafica_barras_v,   3),
+            'grafica_linea':      (graficaslib.grafica_linea,      4),
+            'grafica_dispersion': (graficaslib.grafica_dispersion, 5),
+            'histograma':         (graficaslib.histograma,         4),
+            'grafica_pastel':     (graficaslib.grafica_pastel,     2),
+            'grafica_funcion':    (graficaslib.grafica_funcion,    6),
+            # ── Matrices ──────────────────────────────────────
+            'mat_get':         (matriceslib.mat_get,         3),
+            'mat_idx':         (matriceslib.mat_idx,         3),
+            'mat_ceros':       (matriceslib.mat_ceros,       2),
+            'mat_identidad':   (matriceslib.mat_identidad,   1),
+            'mat_suma':        (matriceslib.mat_suma,        4),
+            'mat_resta':       (matriceslib.mat_resta,       4),
+            'mat_escalar':     (matriceslib.mat_escalar,     4),
+            'mat_mul':         (matriceslib.mat_mul,         5),
+            'mat_transpuesta': (matriceslib.mat_transpuesta, 3),
+            'mat_traza':       (matriceslib.mat_traza,       2),
+            'mat_inversa':     (matriceslib.mat_inversa,     2),
+            'mat_det':         (matriceslib.mat_det,         2),
+            'mat_imprimir':    (matriceslib.mat_imprimir,    3),
+            'vec_dot':         (matriceslib.vec_dot,         3),
+            'vec_norma':       (matriceslib.vec_norma,       2),
+            # ── Arreglos ──────────────────────────────────────
+
+            'longitud':   (self._len, 1),
+            'len':        (self._len, 1),
         }
 
-    # ─── Normalizacion de angulos ────────────────────────────
+    # ─── Normalización de ángulos ────────────────────────────
     def _normalize_angle(self, x):
         x = x % self.TWO_PI
         if x > self.PI:
@@ -158,13 +192,10 @@ class EvalVisitor:
         return float(x)
 
     def _log(self, x):
-        """Logaritmo natural mediante serie de Padé / iteración de Newton."""
         if x <= 0:
             raise RuntimeError("log(x) no definido para x <= 0")
-        # Reducción: log(x) = log(m * 2^k) = log(m) + k*log(2)
-        # Normalizamos m en [1, 2)
-        k = 0
-        m = float(x)
+        k   = 0
+        m   = float(x)
         ln2 = 0.6931471805599453
         while m >= 2.0:
             m /= 2.0
@@ -172,7 +203,6 @@ class EvalVisitor:
         while m < 1.0:
             m *= 2.0
             k -= 1
-        # Serie de Taylor de log alrededor de 1: y = m-1, log(1+y) = y - y²/2 + ...
         y      = m - 1.0
         term   = y
         result = y
@@ -187,7 +217,6 @@ class EvalVisitor:
         return self._log(x) / self._log(10.0)
 
     def _exp(self, x):
-        """e^x mediante serie de Taylor."""
         x      = float(x)
         term   = 1.0
         result = 1.0
@@ -205,29 +234,29 @@ class EvalVisitor:
 
     # ─── Dispatcher principal ────────────────────────────────
     def visit(self, ctx):
-        if isinstance(ctx, ProgContext):        return self.visitProg(ctx)
-        if isinstance(ctx, AssignContext):      return self.visitAssign(ctx)
-        if isinstance(ctx, PrintExprContext):   return self.visitPrintExpr(ctx)
-        if isinstance(ctx, PrintContext):       return self.visitPrint(ctx)
-        if isinstance(ctx, MulDivContext):      return self.visitMulDiv(ctx)
-        if isinstance(ctx, PowContext):         return self.visitPow(ctx)
-        if isinstance(ctx, AddSubContext):      return self.visitAddSub(ctx)
-        if isinstance(ctx, UnaryMinusContext):  return self.visitUnaryMinus(ctx)
-        if isinstance(ctx, IntContext):         return self.visitInt(ctx)
-        if isinstance(ctx, FloatContext):       return self.visitFloat(ctx)
-        if isinstance(ctx, StringContext):      return self.visitString(ctx)
-        if isinstance(ctx, IdContext):          return self.visitId(ctx)
-        if isinstance(ctx, ParensContext):      return self.visitParens(ctx)
-        if isinstance(ctx, IfContext):          return self.visitIf(ctx)
-        if isinstance(ctx, ConditionContext):   return self.visitCondition(ctx)
-        if isinstance(ctx, WhileContext):       return self.visitWhile(ctx)
-        if isinstance(ctx, ForContext):         return self.visitFor(ctx)
-        if isinstance(ctx, ArrayLiteralContext):return self.visitArrayLiteral(ctx)
-        if isinstance(ctx, ArrayAccessContext): return self.visitArrayAccess(ctx)
-        if isinstance(ctx, ArrayAssignContext): return self.visitArrayAssign(ctx)
-        if isinstance(ctx, FuncDefContext):     return self.visitFuncDef(ctx)
-        if isinstance(ctx, FuncCallContext):    return self.visitFuncCall(ctx)
-        if isinstance(ctx, ReturnContext):      return self.visitReturn(ctx)
+        if isinstance(ctx, ProgContext):         return self.visitProg(ctx)
+        if isinstance(ctx, AssignContext):       return self.visitAssign(ctx)
+        if isinstance(ctx, PrintExprContext):    return self.visitPrintExpr(ctx)
+        if isinstance(ctx, PrintContext):        return self.visitPrint(ctx)
+        if isinstance(ctx, MulDivContext):       return self.visitMulDiv(ctx)
+        if isinstance(ctx, PowContext):          return self.visitPow(ctx)
+        if isinstance(ctx, AddSubContext):       return self.visitAddSub(ctx)
+        if isinstance(ctx, UnaryMinusContext):   return self.visitUnaryMinus(ctx)
+        if isinstance(ctx, IntContext):          return self.visitInt(ctx)
+        if isinstance(ctx, FloatContext):        return self.visitFloat(ctx)
+        if isinstance(ctx, StringContext):       return self.visitString(ctx)
+        if isinstance(ctx, IdContext):           return self.visitId(ctx)
+        if isinstance(ctx, ParensContext):       return self.visitParens(ctx)
+        if isinstance(ctx, IfContext):           return self.visitIf(ctx)
+        if isinstance(ctx, ConditionContext):    return self.visitCondition(ctx)
+        if isinstance(ctx, WhileContext):        return self.visitWhile(ctx)
+        if isinstance(ctx, ForContext):          return self.visitFor(ctx)
+        if isinstance(ctx, ArrayLiteralContext): return self.visitArrayLiteral(ctx)
+        if isinstance(ctx, ArrayAccessContext):  return self.visitArrayAccess(ctx)
+        if isinstance(ctx, ArrayAssignContext):  return self.visitArrayAssign(ctx)
+        if isinstance(ctx, FuncDefContext):      return self.visitFuncDef(ctx)
+        if isinstance(ctx, FuncCallContext):     return self.visitFuncCall(ctx)
+        if isinstance(ctx, ReturnContext):       return self.visitReturn(ctx)
         raise RuntimeError(f"Nodo desconocido: {type(ctx)}")
 
     # ─── Visitores ───────────────────────────────────────────
@@ -245,11 +274,9 @@ class EvalVisitor:
 
     def visitPrint(self, ctx):
         value = self.visit(ctx.expr)
-        # Formato limpio para floats: evitar 3.0 cuando es entero exacto
         if isinstance(value, float) and value == int(value):
             print(int(value))
         elif isinstance(value, float):
-            # Mostrar hasta 10 decimales significativos sin ceros finales
             s = f"{value:.10f}".rstrip('0').rstrip('.')
             print(s)
         else:
@@ -263,7 +290,6 @@ class EvalVisitor:
             return left * right
         if right == 0:
             raise ZeroDivisionError("No se puede dividir entre cero")
-        # División real si alguno es float, entera si ambos son int
         if isinstance(left, float) or isinstance(right, float):
             return left / right
         return left // right
@@ -277,7 +303,6 @@ class EvalVisitor:
         left  = self.visit(ctx.left)
         right = self.visit(ctx.right)
         if ctx.op.type == ADD:
-            # Concatenación automática string + número
             if isinstance(left, str) or isinstance(right, str):
                 def _fmt(v):
                     if isinstance(v, float) and v == int(v):
@@ -295,7 +320,7 @@ class EvalVisitor:
     def visitInt(self, ctx):
         return ctx.value
 
-    def visitFloat(self, ctx):      # <-- NUEVO
+    def visitFloat(self, ctx):
         return ctx.value
 
     def visitString(self, ctx):
