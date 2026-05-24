@@ -30,7 +30,7 @@ class EvalVisitor:
         filelib    = DeepLangFileLib()
         graficaslib  = DeepLangGraficasLib()
         matriceslib  = DeepLangMatricesLib()
-        mllib      = DeepLangMLLib()  # <-- NUEVA LIBRERÍA
+        mllib      = DeepLangMLLib() 
         
         self.builtins = {
             # ── Trigonométricas ───────────────────────────────
