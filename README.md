@@ -1,249 +1,206 @@
-Jacobo Mondragon
-
-Julian Gomez 
-
 # DeepLang
 
-DeepLang es un lenguaje de programación de dominio específico (DSL) diseñado para realizar operaciones aritméticas y lógicas. Está implementado en Python siguiendo el patrón de diseño Visitor.
+DeepLang es un lenguaje interpretado para computación científica, visualización de datos y machine learning.
 
-## Archivos del proyecto
-
-| Archivo | Descripción |
-|---|---|
-| `DeepLang.g4` | La gramática formal — define la sintaxis del lenguaje |
-| `lexer.py` | Lee el código fuente y lo convierte en tokens |
-| `parser.py` | Toma los tokens y construye el árbol de sintaxis |
-| `EvalVisitor.py` | Recorre el árbol y ejecuta las operaciones |
-| `DeepLang.py` | Punto de entrada — modo interactivo (REPL) |
-
-## Cómo ejecutar
+## Ejecutar
 
 ```bash
-python3 DeepLang.py
+python3 DeepLang.py              # REPL interactivo
+python3 DeepLang.py script.dl    # Ejecutar archivo
 ```
 
-El REPL muestra `dl>` cuando espera una instrucción nueva y `...` cuando está dentro de un bloque sin cerrar (`if`, `while`, `fun`).
+## Sintaxis Básica
 
----
-
-## Sintaxis
-
-### Aritmética
-
-```
-5 + 3
-10 - 4
-6 * 7
-20 / 4
-(2 ^ 3)
-(1 + 2) * 3
-```
-
-La división es entera. La potencia se escribe con `^`. Los paréntesis cambian la precedencia normal (`^` antes que `*` y `/`, y luego `+` y `-`).
-
----
-
-### Variables
-
-```
+### Variables y aritmética
+```deepdl
 a = 10
-b = a + 5
+b = 20
+print(a + b)      # 30
+print(2 ^ 3)      # 8 (potencia)
 ```
-
-Si usas una variable que no existe, vale `0`.
-
----
-
-### Imprimir
-
-```
-print(x)
-print(a + b)
-```
-
-Escribir una expresión sola **no** la imprime. Solo `print()` muestra valores en pantalla.
-
----
-
-### Condicionales
-
-```
-if a > b
-  print(a)
-else
-  print(b)
-end
-```
-
-El `else` es opcional:
-
-```
-if x == 10
-  print(x)
-end
-```
-
-Operadores de comparación disponibles: `==`, `!=`, `<`, `>`, `<=`, `>=`.
-
----
-
-### Ciclos
-
-```
-i = 1
-while i <= 5
-  print(i)
-  i = i + 1
-end
-```
-
-El bloque se repite mientras la condición sea verdadera.
-
----
 
 ### Arreglos
-
+```deepdl
+lista = [1, 2, 3, 4]
+print(lista[0])        # 1
+print(longitud(lista)) # 4
+lista[0] = 99
 ```
-lista = [10, 20, 30]   
-lista[0] = 99          
-print(lista[0])        
-```
 
-- Los índices empiezan en `0`.
-- Si el índice está fuera del rango, da error.
+### If / While / For
+```deepdl
+if a > b
+  print("Mayor")
+end
 
-Recorrer un arreglo:
+while a < 100
+  print(a)
+  a = a + 1
+end
 
-```
-i = 0
-while i < 3
-  print(lista[i])
-  i = i + 1
+for i = 1 to 5
+  print(i)
 end
 ```
 
----
-
-### Funciones y recursividad
-
-```
-fun factorial(n)
-  if n == 0
-    return 1
-  end
-  return n * factorial(n - 1)
+### Funciones
+```deepdl
+fun suma(x, y)
+  return x + y
 end
 
-print(factorial(5))
+print(suma(3, 4))  # 7
 ```
 
-- Se declaran con `fun nombre(params)` y se cierran con `end`.
-- Se retorna un valor con `return`.
-- Soportan recursividad.
-- Cada llamada tiene su propio ámbito de variables — los parámetros no pisan las variables externas.
+## Librerías Integradas
 
----
-
-### Funciones trigonométricas integradas
-
-También puedes usar funciones trigonométricas sin definirlas:
-
-```
-x = 0
-print(sen(x))
-print(cos(x))
-print(tan(x))
-print(cosecante(x))
-print(secante(x))
-print(cotangente(x))
-print(modulo(10, 3))
-print(raiz(9))
+### Trigonometría (radianes)
+```deepdl
+sen(x), cos(x), tan(x)
+cosecante(x), secante(x), cotangente(x)
 ```
 
-- `sen`, `cos`, `tan`, `cosecante`, `secante` y `cotangente` reciben **1 argumento**.
-- `sin` también está disponible como alias de `sen`.
-- También hay alias cortos: `csc`, `sec`, `cot` y `ctg`.
-- `modulo(a, b)` (alias `mod(a, b)`) calcula el residuo de `a % b`.
-- `raiz(x)` calcula raíz cuadrada de `x`.
-- El argumento está en **radianes**.
-- Están implementadas desde cero en el intérprete (series de Taylor).
-
-### Librería de lectura de archivos
-
-DeepLang incluye funciones integradas para leer archivos de texto sin usar una librería `sys`:
-
+### Matemática
+```deepdl
+abs(x)              # Valor absoluto
+raiz(x)             # Raíz cuadrada
+log(x), log10(x)    # Logaritmos
+exp(x)              # Exponencial
+redondear(x, d)     # Redondear
+piso(x), techo(x)   # Piso y techo
+modulo(a, b)        # Módulo
 ```
+
+## Gráficas ASCII
+
+```deepdl
+grafica_barras(datos, n, ancho)
+grafica_barras_v(datos, n, alto)
+grafica_linea(datos, n, ancho, alto)
+grafica_dispersion(X, Y, n, w, h)
+histograma(datos, n, bins, ancho)
+grafica_pastel(datos, n)
+grafica_funcion(Y, n, xmin, xmax, ancho, alto)
+```
+
+Ejemplo:
+```deepdl
+datos = [5, 10, 15, 20, 25]
+grafica_barras(datos, 5, 30)
+```
+
+## Matrices
+
+```deepdl
+M = mat_ceros(2, 3)              # Matriz de ceros
+I = mat_identidad(3)             # Identidad
+A = mat_suma(M1, M2, filas, cols)
+B = mat_mul(A, B, m, n, p)       # Multiplicación
+det = mat_det(A, n)              # Determinante
+mat_imprimir(A, filas, cols)
+```
+
+## Machine Learning
+
+### Normalización
+```deepdl
+m = media(datos, n)
+std = desviacion(datos, n)
+norm = normalizar_zscore(datos, n)
+```
+
+### Regresión Lineal
+```deepdl
+params = regresion_lineal(X, Y, n, lr, epochs)  # [w, b]
+y_pred = rl_predecir(params, X, n)
+```
+
+### Red Neuronal (MLP)
+```deepdl
+ml_semilla(42)
+red = mlp_init(2, 4, 1)              # entrada=2, oculta=4, salida=1
+red = mlp_entrenar(red, X, Y, n, lr, epochs)
+y_pred = mlp_predecir(red, X, n)
+```
+
+### K-Means
+```deepdl
+etiquetas = kmeans(X, n, m, k, max_iter)
+kmeans_resumen(etiquetas, n, k)
+```
+
+### Otros algoritmos
+```deepdl
+# Regresión logística
+params = regresion_logistica(X, Y, n, lr, epochs)
+
+# Perceptrón
+W = perceptron(X, Y, n, m, lr, epochs)
+
+# Métricas
+mse = mse(y_real, y_pred, n)
+mae = mae(y_real, y_pred, n)
+r2 = r_cuadrado(y_real, y_pred, n)
+acc = accuracy(y_real, y_pred, n)
+```
+
+## Archivos
+
+### Lectura de texto
+```deepdl
 contenido = leerarchivo("datos.txt")
-print(contenido)
-
 lineas = leerlineas("datos.txt")
-print(lineas[0])
 ```
 
-- `leerarchivo(ruta)` devuelve todo el contenido como texto (`string`).
-- `leerlineas(ruta)` devuelve un arreglo con cada línea del archivo.
-- Si la ruta no existe o no se puede leer, el intérprete muestra un error claro.
-
----
-
-### Potencias
-
-Puedes elevar usando `^`:
-
-```
-print(2 ^ 8)
-print(9 ^ 2)
+### Escritura de texto
+```deepdl
+escribirarchivo("salida.txt", "Contenido")
+agregararchivo("salida.txt", "Más contenido")
 ```
 
-- `x ^ y` requiere que `y` sea entero.
-
----
-
-## Ejemplo completo
-
+### CSV
+```deepdl
+tabla = leercsv("datos.csv")              # Con encabezado
+datos = leercsv_datos("datos.csv")        # Sin encabezado
+columna = leercsv_columna("datos.csv", 0)
+escribircsv("salida.csv", tabla)
 ```
-fun fibonacci(n)
-  if n == 0
-    return 0
+
+## Ejemplo Completo
+
+```deepdl
+# Fibonacci
+fun fib(n)
+  if n <= 1
+    return n
   end
-  if n == 1
-    return 1
-  end
-  return fibonacci(n - 1) + fibonacci(n - 2)
+  return fib(n-1) + fib(n-2)
 end
 
-nums = [0, 1, 2, 3, 4, 5, 6, 7]
 i = 0
-while i < 8
-  print(fibonacci(nums[i]))
+while i < 10
+  print(fib(i))
   i = i + 1
 end
 ```
 
-Salida:
-```
-0
-1
-1
-2
-3
-5
-8
-13
-```
+## Archivos del Proyecto
 
----
+- `DeepLang.py` — Intérprete (REPL)
+- `lexer.py` — Tokenizador
+- `parser.py` — Analizador sintáctico
+- `EvalVisitor.py` — Evaluador
+- `deeplang_filelib.py` — Archivos y CSV
+- `deeplang_graficaslib.py` — Gráficas
+- `deeplang_matriceslib.py` — Matrices
+- `deeplang_mllib.py` — Machine Learning
 
-## Flujo del programa
+## Notas
 
-```
-Código fuente
-      ↓
-  lexer.py       →  convierte texto en tokens
-      ↓
-  parser.py      →  construye el árbol de sintaxis
-      ↓
-  EvalVisitor.py →  ejecuta las operaciones
-      ↓
-  Resultado en pantalla
-```
+- Los índices empiezan en 0
+- Las funciones se pasan por valor (reasignar si modificas)
+- Variables no asignadas valen 0
+- Trigonometría en radianes
+- Sin dependencias externas (Python puro)
+
+**Autores:** Jacobo Mondragón, Julián Gómez
