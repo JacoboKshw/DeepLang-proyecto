@@ -1,5 +1,5 @@
 # lexer.py
-# Tokens básicos del lenguaje.
+# Tokens.
 
 MUL     = 'MUL'
 DIV     = 'DIV'
@@ -7,14 +7,14 @@ ADD     = 'ADD'
 SUB     = 'SUB'
 ID      = 'ID'
 INT     = 'INT'
-FLOAT   = 'FLOAT'      # <-- NUEVO: literales decimales como 3.14
+FLOAT   = 'FLOAT'     
 STRING  = 'STRING'
 NEWLINE = 'NEWLINE'
 LPAREN  = 'LPAREN'
 RPAREN  = 'RPAREN'
 EOF     = 'EOF'
 
-# Tokens para estructuras de control.
+
 IF    = 'IF'
 ELSE  = 'ELSE'
 END   = 'END'
@@ -29,21 +29,20 @@ GT  = 'GT'   # >
 LTE = 'LTE'  # <=
 GTE = 'GTE'  # >=
 
-# Tokens para arreglos.
+
 LBRACKET = 'LBRACKET'  # [
 RBRACKET = 'RBRACKET'  # ]
 COMMA    = 'COMMA'     # ,
 POW      = 'POW'       # ^
 
-# Tokens de entrada/salida.
+
 PRINT = 'PRINT'
 
-# Tokens para funciones.
+
 FUN    = 'FUN'
 RETURN = 'RETURN'
 
-# Token para operador punto (acceso a campo — reservado para futuro uso)
-DOT = 'DOT'  # .  usado solo en floats internamente
+DOT = 'DOT'  # .
 
 class Token:
     def __init__(self, type_, text, line):
@@ -59,7 +58,6 @@ class LexerError(Exception):
     pass
 
 
-# Palabras reservadas y su tipo de token.
 KEYWORDS = {
     'if':     IF,
     'else':   ELSE,
