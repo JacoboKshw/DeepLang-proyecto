@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# DeepLang.py — Punto de entrada principal del intérprete DeepLang
-# Sin dependencias de sys ni os: se usa deeplang_filelib.py para archivos.
-
 from lexer            import DeepLangLexer, LexerError
 from parser           import DeepLangParser, ParseError
 from EvalVisitor      import EvalVisitor
@@ -9,13 +6,7 @@ from deeplang_filelib import DeepLangFileLib
 
 _filelib = DeepLangFileLib()
 
-
-# ─────────────────────────────────────────────────────────────
-# Leer argumentos de la línea de comandos sin sys
-# ─────────────────────────────────────────────────────────────
-
 def _argv():
-    """Lee los argumentos del proceso sin importar sys."""
     try:
         # /proc/self/cmdline separa los argumentos con bytes nulos
         contenido = _filelib.leerarchivo('/proc/self/cmdline')
@@ -27,14 +18,9 @@ def _argv():
 
 
 def _salir(codigo=0):
-    """Sale del proceso sin sys.exit."""
     raise SystemExit(codigo)
 
-
-# ─────────────────────────────────────────────────────────────
 # Contar bloques abiertos (para el REPL multilínea)
-# ─────────────────────────────────────────────────────────────
-
 def contar_bloques_abiertos(texto):
     try:
         tokens = DeepLangLexer(texto + '\n').nextToken()
@@ -50,9 +36,7 @@ def contar_bloques_abiertos(texto):
     return max(profundidad, 0)
 
 
-# ─────────────────────────────────────────────────────────────
 # Ejecutar un bloque de código con un visitor dado
-# ─────────────────────────────────────────────────────────────
 
 def ejecutar(codigo, eval_, nombre="<stdin>"):
     try:
@@ -66,11 +50,7 @@ def ejecutar(codigo, eval_, nombre="<stdin>"):
     except Exception         as e: print(f"[Error] {e}")
     return False
 
-
-# ─────────────────────────────────────────────────────────────
 # Cargar un archivo .dl usando DeepLangFileLib
-# ─────────────────────────────────────────────────────────────
-
 def cargar_archivo(ruta, eval_):
     try:
         codigo = _filelib.leerarchivo(ruta)
@@ -80,18 +60,11 @@ def cargar_archivo(ruta, eval_):
     return ejecutar(codigo, eval_, nombre=ruta)
 
 
-# ─────────────────────────────────────────────────────────────
-# REPL interactivo
-# ─────────────────────────────────────────────────────────────
-
 def repl(eval_=None):
     if eval_ is None:
         eval_ = EvalVisitor()
 
     print("DeepLang | escribe 'salir' para terminar")
-    print("  Comandos especiales:")
-    print("    cargar \"archivo.dl\"   — carga un módulo DeepLang")
-    print("    salir                  — termina el REPL")
     print("─" * 60)
 
     buffer = []
@@ -129,9 +102,7 @@ def repl(eval_=None):
         buffer = []
 
 
-# ─────────────────────────────────────────────────────────────
 # Punto de entrada
-# ─────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     args = _argv()
