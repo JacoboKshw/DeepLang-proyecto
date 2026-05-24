@@ -51,17 +51,6 @@ class DeepLangFileLib:
 
     # ─── Lectura de CSV ──────────────────────────────────────
     def leercsv(self, ruta):
-        """
-        Lee un CSV y devuelve una lista de listas (arreglo de filas).
-        Cada fila es un arreglo de valores: int, float o string.
-        La primera fila (encabezado) se incluye como fila de strings.
-
-        Ejemplo de uso en DeepLang:
-            tabla = leercsv("datos.csv")
-            print(tabla[0])        # primera fila (encabezados)
-            print(tabla[1])        # segunda fila (primer dato)
-            print(tabla[1][0])     # celda fila 1, columna 0
-        """
         lineas = self.leerlineas(ruta)
         if not lineas:
             return []
@@ -74,28 +63,12 @@ class DeepLangFileLib:
         return resultado
 
     def leercsv_datos(self, ruta):
-        """
-        Lee un CSV saltando la primera fila (encabezados).
-        Solo devuelve filas de datos, convirtiendo números automáticamente.
-
-        Ejemplo de uso en DeepLang:
-            datos = leercsv_datos("datos.csv")
-            print(datos[0][0])     # primera celda del primer dato
-        """
         tabla = self.leercsv(ruta)
         if len(tabla) <= 1:
             return []
         return tabla[1:]           # saltamos el encabezado
 
     def leercsv_columna(self, ruta, col):
-        """
-        Lee una columna específica de un CSV (índice base 0),
-        saltando el encabezado. Devuelve un arreglo de valores.
-
-        Ejemplo de uso en DeepLang:
-            edades = leercsv_columna("datos.csv", 1)
-            print(edades[0])
-        """
         col = int(col)
         datos = self.leercsv_datos(ruta)
         columna = []
@@ -110,16 +83,6 @@ class DeepLangFileLib:
         return columna
 
     def escribircsv(self, ruta, tabla):
-        """
-        Escribe una tabla (arreglo de arreglos) como archivo CSV.
-        Crea o sobreescribe el archivo.
-
-        Ejemplo de uso en DeepLang:
-            fila0 = ["nombre", "edad", "nota"]
-            fila1 = ["Ana", 20, 9.5]
-            tabla = [fila0, fila1]
-            escribircsv("salida.csv", tabla)
-        """
         ruta_str = self._validar_ruta(ruta)
         if not isinstance(tabla, list):
             raise RuntimeError("escribircsv() espera un arreglo de filas")
@@ -143,10 +106,6 @@ class DeepLangFileLib:
 
     # ─── Helpers CSV ─────────────────────────────────────────
     def _parsear_fila_csv(self, linea):
-        """
-        Parsea una línea CSV respetando comillas dobles.
-        Convierte automáticamente a int o float cuando es posible.
-        """
         celdas  = []
         celda   = []
         en_comillas = False
