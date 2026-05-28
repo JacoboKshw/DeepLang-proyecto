@@ -446,10 +446,6 @@ class DeepLangFileLib:
                 break
         return col - 1
 
-    # ═══════════════════════════════════════════════════════════
-    # API PÚBLICA XLSX
-    # ═══════════════════════════════════════════════════════════
-
     def _xlsx_abrir(self, ruta):
         """
         Abre un xlsx sin compresión y devuelve (sheets_dict, shared_strings).
