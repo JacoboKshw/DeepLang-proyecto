@@ -261,7 +261,6 @@ class DeepLangFileLib:
     def _xml_tokens(self, texto):
         """
         Tokeniza XML en una lista de ('tag', contenido) o ('text', contenido).
-        No maneja CDATA ni processing instructions (no necesario para xlsx).
         """
         tokens = []
         i      = 0
@@ -363,7 +362,7 @@ class DeepLangFileLib:
 
     def _xlsx_parsear_hoja(self, xml_bytes, shared):
         """
-        Parsea el XML de una hoja sin usar librerías.
+        Parsea el XML de una hoja.
         Devuelve lista de listas respetando columnas vacías.
         """
         texto  = xml_bytes.decode("utf-8", errors="replace")
