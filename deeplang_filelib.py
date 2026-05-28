@@ -1,5 +1,4 @@
 """Librería estándar de DeepLang para lectura y escritura de archivos.
-Sin ningún import — todo implementado desde cero.
 """
 
 
