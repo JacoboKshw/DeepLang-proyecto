@@ -1,4 +1,3 @@
-#EvalVIsitor.py
 from lexer import MUL, DIV, ADD, SUB, POW, EQ, NEQ, LT, GT, LTE, GTE
 from parser import (
     ProgContext, AssignContext, PrintExprContext, PrintContext,
@@ -30,7 +29,7 @@ class EvalVisitor:
         filelib    = DeepLangFileLib()
         graficaslib  = DeepLangGraficasLib()
         matriceslib  = DeepLangMatricesLib()
-        mllib      = DeepLangMLLib() 
+        mllib      = DeepLangMLLib()  # <-- NUEVA LIBRERÍA
         
         self.builtins = {
             # ── Trigonométricas ───────────────────────────────
@@ -68,6 +67,12 @@ class EvalVisitor:
             'leercsv_datos':   (filelib.leercsv_datos,   1),
             'leercsv_columna': (filelib.leercsv_columna, 2),
             'escribircsv':     (filelib.escribircsv,     2),
+            # ── XLSX ──────────────────────────────────────────
+            'leerxlsx':         (filelib.leerxlsx,         1),
+            'leerxlsx_datos':   (filelib.leerxlsx_datos,   1),
+            'leerxlsx_hoja':    (filelib.leerxlsx_hoja,    2),
+            'leerxlsx_columna': (filelib.leerxlsx_columna, 2),
+            'leerxlsx_hojas':   (filelib.leerxlsx_hojas,   1),
             # ── Gráficas ASCII ────────────────────────────────
             'grafica_barras':     (graficaslib.grafica_barras,     3),
             'grafica_barras_v':   (graficaslib.grafica_barras_v,   3),
