@@ -2,7 +2,8 @@
 
 ## Tabla de Contenidos
 1. [Sintaxis Básica](#sintaxis-básica)
-2. [Machine Learning](#machine-learning)
+2. [Matrices](#matricesdl)
+3. [Machine Learning](#machine-learning)
    - [Activaciones](#activaciones)
    - [Normalización](#normalización)
    - [Métricas](#métricas)
@@ -10,7 +11,7 @@
    - [Regresión Logística](#regresión-logística)
    - [Redes Neuronales](#redes-neuronales-mlp)
    - [K-Means](#k-means)
-3. [Gráficas](#gráficas-ascii)
+4. [Gráficas](#gráficas-ascii)
 
 ---
 
@@ -55,7 +56,7 @@ division = 10 / 3       # División (3.33)
 resto = modulo(10, 3)   # Resto (1)
 raiz = raiz(16)         # Raíz cuadrada (4)
 ```
-# Matrices en DeepLang
+# Matricesdl
 
 Las matrices se representan como arreglos planos en formato fila-mayor (row-major). Un elemento en la fila `i` y columna `j` de una matriz con `cols` columnas se encuentra en el índice `i * cols + j` del arreglo.
 
