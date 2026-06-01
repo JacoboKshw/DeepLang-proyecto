@@ -5,10 +5,6 @@
 class DeepLangFileLib:
     """Funciones de archivos para integrarse como builtins."""
 
-    # ═══════════════════════════════════════════════════════════
-    # LECTURA DE TEXTO
-    # ═══════════════════════════════════════════════════════════
-
     def leerarchivo(self, ruta):
         ruta_str = self._validar_ruta(ruta)
         try:
@@ -26,9 +22,6 @@ class DeepLangFileLib:
     def leerlineas(self, ruta):
         return self.leerarchivo(ruta).splitlines()
 
-    # ═══════════════════════════════════════════════════════════
-    # ESCRITURA DE TEXTO
-    # ═══════════════════════════════════════════════════════════
 
     def escribirarchivo(self, ruta, contenido):
         ruta_str = self._validar_ruta(ruta)
@@ -54,9 +47,6 @@ class DeepLangFileLib:
         except OSError as exc:
             raise RuntimeError(f"Error al agregar a '{ruta_str}': {exc}") from exc
 
-    # ═══════════════════════════════════════════════════════════
-    # CSV
-    # ═══════════════════════════════════════════════════════════
 
     def leercsv(self, ruta):
         lineas = self.leerlineas(ruta)
@@ -106,9 +96,6 @@ class DeepLangFileLib:
         except OSError as exc:
             raise RuntimeError(f"Error al escribir '{ruta_str}': {exc}") from exc
 
-    # ═══════════════════════════════════════════════════════════
-    # ZIP PARSER
-    # ═══════════════════════════════════════════════════════════
 
     def _zip_u16(self, d, p):
         return d[p] | (d[p+1] << 8)
@@ -181,9 +168,6 @@ class DeepLangFileLib:
 
         return resultado
 
-    # ═══════════════════════════════════════════════════════════
-    # XML PARSER 
-    # ═══════════════════════════════════════════════════════════
 
     def _xml_attrs(self, tag_texto):
         """
@@ -281,10 +265,6 @@ class DeepLangFileLib:
                     tokens.append(('text', self._xml_unescape(contenido)))
                 i = j
         return tokens
-
-    # ═══════════════════════════════════════════════════════════
-    # PARSERS ESPECÍFICOS DE XLSX
-    # ═══════════════════════════════════════════════════════════
 
     def _xlsx_shared_strings(self, xml_bytes):
         """
@@ -523,9 +503,6 @@ class DeepLangFileLib:
         sheets, _ = self._xlsx_abrir(ruta)
         return list(sheets.keys())
 
-    # ═══════════════════════════════════════════════════════════
-    # HELPERS CSV
-    # ═══════════════════════════════════════════════════════════
 
     def _parsear_fila_csv(self, linea):
         celdas      = []
@@ -573,9 +550,6 @@ class DeepLangFileLib:
             return str(int(valor))
         return str(valor)
 
-    # ═══════════════════════════════════════════════════════════
-    # VALIDADORES
-    # ═══════════════════════════════════════════════════════════
 
     @staticmethod
     def _validar_ruta(ruta):
