@@ -1,6 +1,6 @@
 # DeepLang - Lenguaje Interpretado con Machine Learning
 
-## 📚 Tabla de Contenidos
+## Tabla de Contenidos
 1. [Sintaxis Básica](#sintaxis-básica)
 2. [Machine Learning](#machine-learning)
    - [Activaciones](#activaciones)
