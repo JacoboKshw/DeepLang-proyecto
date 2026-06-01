@@ -1,4 +1,4 @@
-# DeepLang - Lenguaje Interpretado con Machine Learning
+# DeepLang 
 
 ## Tabla de Contenidos
 1. [Sintaxis Básica](#sintaxis-básica)
@@ -55,7 +55,385 @@ division = 10 / 3       # División (3.33)
 resto = modulo(10, 3)   # Resto (1)
 raiz = raiz(16)         # Raíz cuadrada (4)
 ```
+# Matrices en DeepLang
 
+Las matrices se representan como arreglos planos en formato fila-mayor (row-major). Un elemento en la fila `i` y columna `j` de una matriz con `cols` columnas se encuentra en el índice `i * cols + j` del arreglo.
+
+```deepdl
+# Matriz logica (2x3):     Arreglo plano equivalente:
+# [1, 2, 3]                [1, 2, 3, 4, 5, 6]
+# [4, 5, 6]
+#
+# Acceder M[1][2] (valor 6):
+# indice = 1 * 3 + 2 = 5
+# M[5] = 6
+```
+
+---
+
+## Acceso y construccion
+
+### mat_get(M, cols, fila, col)
+Obtiene el elemento en la posicion `[fila][col]` de la matriz plana `M`.
+
+```deepdl
+M = [1, 2, 3, 4, 5, 6]   # Matriz 2x3
+cols = 3
+
+val = mat_get(M, cols, 1, 2)
+print(val)   # 6
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `M` | arreglo | Matriz en formato plano |
+| `cols` | int | Numero de columnas |
+| `fila` | int | Indice de fila (base 0) |
+| `col` | int | Indice de columna (base 0) |
+
+**Retorna:** El valor en esa posicion.
+
+---
+
+### mat_idx(cols, fila, col)
+Calcula el indice plano de la posicion `[fila][col]` sin leer ningun arreglo. Util para construir accesos manuales.
+
+```deepdl
+cols = 3
+idx = mat_idx(cols, 1, 2)
+print(idx)   # 5
+
+M = [1, 2, 3, 4, 5, 6]
+print(M[idx])   # 6
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `cols` | int | Numero de columnas |
+| `fila` | int | Indice de fila |
+| `col` | int | Indice de columna |
+
+**Retorna:** Indice entero.
+
+---
+
+### mat_ceros(filas, cols)
+Crea una matriz de `filas x cols` rellena de ceros.
+
+```deepdl
+M = mat_ceros(2, 3)
+# [0, 0, 0, 0, 0, 0]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `filas` | int | Numero de filas |
+| `cols` | int | Numero de columnas |
+
+**Retorna:** Arreglo de tamanio `filas * cols` con ceros.
+
+---
+
+### mat_identidad(n)
+Crea la matriz identidad cuadrada de tamanio `n x n`.
+
+```deepdl
+I = mat_identidad(3)
+mat_imprimir(I, 3, 3)
+# [ 1  0  0 ]
+# [ 0  1  0 ]
+# [ 0  0  1 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `n` | int | Tamanio de la matriz cuadrada |
+
+**Retorna:** Arreglo de tamanio `n * n`.
+
+---
+
+## Operaciones basicas
+
+### mat_suma(A, B, filas, cols)
+Suma elemento a elemento dos matrices de las mismas dimensiones.
+
+```deepdl
+A = [1, 2, 3, 4]
+B = [5, 6, 7, 8]
+C = mat_suma(A, B, 2, 2)
+mat_imprimir(C, 2, 2)
+# [ 6   8  ]
+# [ 10  12 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Primera matriz (filas x cols) |
+| `B` | arreglo | Segunda matriz (filas x cols) |
+| `filas` | int | Numero de filas |
+| `cols` | int | Numero de columnas |
+
+**Retorna:** Arreglo resultado de la suma.
+
+---
+
+### mat_resta(A, B, filas, cols)
+Resta elemento a elemento `A - B` para matrices de las mismas dimensiones.
+
+```deepdl
+A = [5, 6, 7, 8]
+B = [1, 2, 3, 4]
+C = mat_resta(A, B, 2, 2)
+mat_imprimir(C, 2, 2)
+# [ 4  4 ]
+# [ 4  4 ]
+```
+
+**Parametros:** Identicos a `mat_suma`.
+
+**Retorna:** Arreglo resultado de la resta.
+
+---
+
+### mat_escalar(A, filas, cols, k)
+Multiplica cada elemento de la matriz por el escalar `k`.
+
+```deepdl
+A = [1, 2, 3, 4]
+B = mat_escalar(A, 2, 2, 3)
+mat_imprimir(B, 2, 2)
+# [ 3   6  ]
+# [ 9  12  ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz a escalar |
+| `filas` | int | Numero de filas |
+| `cols` | int | Numero de columnas |
+| `k` | numero | Factor escalar |
+
+**Retorna:** Arreglo con cada elemento multiplicado por `k`.
+
+---
+
+### mat_mul(A, B, m, n, p)
+Multiplicacion matricial. `A` es de tamanio `m x n` y `B` de tamanio `n x p`. El resultado es de tamanio `m x p`.
+
+```deepdl
+# A (2x3) * B (3x2) = C (2x2)
+A = [1, 2, 3, 4, 5, 6]
+B = [7, 8, 9, 10, 11, 12]
+C = mat_mul(A, B, 2, 3, 2)
+mat_imprimir(C, 2, 2)
+# [ 58   64  ]
+# [ 139  154 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz de tamanio m x n |
+| `B` | arreglo | Matriz de tamanio n x p |
+| `m` | int | Filas de A |
+| `n` | int | Columnas de A / filas de B |
+| `p` | int | Columnas de B |
+
+**Retorna:** Arreglo de tamanio `m * p`.
+
+**Nota:** Las columnas de `A` deben coincidir con las filas de `B`, de lo contrario el resultado sera incorrecto.
+
+---
+
+### mat_transpuesta(A, filas, cols)
+Calcula la transpuesta de la matriz. El resultado tiene dimensiones `cols x filas`.
+
+```deepdl
+A = [1, 2, 3, 4, 5, 6]   # Matriz 2x3
+T = mat_transpuesta(A, 2, 3)
+mat_imprimir(T, 3, 2)
+# [ 1  4 ]
+# [ 2  5 ]
+# [ 3  6 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz original (filas x cols) |
+| `filas` | int | Filas de la matriz original |
+| `cols` | int | Columnas de la matriz original |
+
+**Retorna:** Arreglo de tamanio `filas * cols` (transpuesta).
+
+---
+
+## Propiedades de matrices cuadradas
+
+### mat_traza(A, n)
+Calcula la traza de una matriz cuadrada `n x n` (suma de la diagonal principal).
+
+```deepdl
+A = [1, 2, 3, 4, 5, 6, 7, 8, 9]   # Matriz 3x3
+t = mat_traza(A, 3)
+print(t)   # 15  (1 + 5 + 9)
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz cuadrada n x n |
+| `n` | int | Tamanio de la matriz |
+
+**Retorna:** Numero (suma de la diagonal).
+
+---
+
+### mat_det(A, n)
+Calcula el determinante de una matriz cuadrada `n x n` usando eliminacion gaussiana con pivoteo parcial.
+
+```deepdl
+A = [1, 2, 3, 4]   # Matriz 2x2
+d = mat_det(A, 2)
+print(d)   # -2  (1*4 - 2*3)
+```
+
+```deepdl
+A = [6, 1, 1, 4, -2, 5, 2, 8, 7]   # Matriz 3x3
+d = mat_det(A, 3)
+print(d)   # -306
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz cuadrada n x n |
+| `n` | int | Tamanio de la matriz |
+
+**Retorna:** Numero. Si la matriz es singular retorna 0.
+
+**Interpretacion:**
+- det != 0 → la matriz es invertible
+- det = 0 → la matriz es singular (no tiene inversa)
+
+---
+
+### mat_inversa(A, n)
+Calcula la inversa de una matriz cuadrada `n x n` usando el metodo de Gauss-Jordan con pivoteo parcial.
+
+```deepdl
+A = [4, 7, 2, 6]   # Matriz 2x2
+Inv = mat_inversa(A, 2)
+mat_imprimir(Inv, 2, 2)
+# [ 0.6  -0.7 ]
+# [ -0.2  0.4 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz cuadrada n x n |
+| `n` | int | Tamanio de la matriz |
+
+**Retorna:** Arreglo con la matriz inversa, o `[]` si la matriz es singular.
+
+**Nota:** Verificar que el retorno no sea `[]` antes de usar el resultado. Si la matriz es singular se imprime un mensaje de error y se retorna un arreglo vacio.
+
+---
+
+## Impresion
+
+### mat_imprimir(A, filas, cols)
+Imprime la matriz en formato legible con corchetes por fila.
+
+```deepdl
+A = [1, 2, 3, 4, 5, 6]
+mat_imprimir(A, 2, 3)
+# [ 1  2  3 ]
+# [ 4  5  6 ]
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `A` | arreglo | Matriz en formato plano |
+| `filas` | int | Numero de filas |
+| `cols` | int | Numero de columnas |
+
+**Retorna:** 0 (solo imprime).
+
+---
+
+## Vectores
+
+### vec_dot(u, v, n)
+Calcula el producto punto entre dos vectores de longitud `n`.
+
+```deepdl
+u = [1, 2, 3]
+v = [4, 5, 6]
+d = vec_dot(u, v, 3)
+print(d)   # 32  (1*4 + 2*5 + 3*6)
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `u` | arreglo | Primer vector |
+| `v` | arreglo | Segundo vector |
+| `n` | int | Longitud de ambos vectores |
+
+**Retorna:** Numero (escalar).
+
+---
+
+### vec_norma(v, n)
+Calcula la norma euclidiana (magnitud) de un vector de longitud `n`.
+
+```deepdl
+v = [3, 4]
+n = vec_norma(v, 2)
+print(n)   # 5  (raiz(3^2 + 4^2))
+```
+
+**Parametros:**
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `v` | arreglo | Vector |
+| `n` | int | Longitud del vector |
+
+**Retorna:** Numero mayor o igual a 0.
+
+**Formula:** `raiz(sum(v[i]^2))`
+
+---
+
+## Tabla resumen
+
+| Funcion | Parametros | Retorna |
+|---------|-----------|---------|
+| `mat_get(M, cols, fila, col)` | M, cols, fila, col | numero |
+| `mat_idx(cols, fila, col)` | cols, fila, col | entero |
+| `mat_ceros(filas, cols)` | filas, cols | arreglo |
+| `mat_identidad(n)` | n | arreglo |
+| `mat_suma(A, B, filas, cols)` | A, B, filas, cols | arreglo |
+| `mat_resta(A, B, filas, cols)` | A, B, filas, cols | arreglo |
+| `mat_escalar(A, filas, cols, k)` | A, filas, cols, k | arreglo |
+| `mat_mul(A, B, m, n, p)` | A, B, m, n, p | arreglo |
+| `mat_transpuesta(A, filas, cols)` | A, filas, cols | arreglo |
+| `mat_traza(A, n)` | A, n | numero |
+| `mat_det(A, n)` | A, n | numero |
+| `mat_inversa(A, n)` | A, n | arreglo o [] |
+| `mat_imprimir(A, filas, cols)` | A, filas, cols | 0 |
+| `vec_dot(u, v, n)` | u, v, n | numero |
+| `vec_norma(v, n)` | v, n | numero |
 ---
 
 # Machine Learning
